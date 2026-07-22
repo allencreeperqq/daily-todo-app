@@ -35,6 +35,26 @@ interface EventRow {
 const SYNC_DAYS_BACK = 90
 const SYNC_DAYS_FORWARD = 365
 
+// Users naturally copy Google Calendar's "shareable link"
+// (https://calendar.google.com/calendar/u/0?cid=<base64>) rather than
+// hunting down the raw Calendar ID in settings. The cid param is just the
+// real calendar ID, base64-encoded — decode it so pasting the link works.
+export function parseCalendarId(input: string): string {
+  const trimmed = input.trim()
+  try {
+    const url = new URL(trimmed)
+    const cid = url.searchParams.get('cid')
+    if (cid) {
+      const normalized = cid.replace(/-/g, '+').replace(/_/g, '/')
+      const decoded = Buffer.from(normalized, 'base64').toString('utf-8')
+      if (decoded.includes('@')) return decoded
+    }
+  } catch {
+    // not a URL — use the raw input as-is
+  }
+  return trimmed
+}
+
 export function listCalendarSources(): CalendarSource[] {
   return getDb()
     .prepare('SELECT * FROM calendar_sources ORDER BY id ASC')
@@ -42,7 +62,7 @@ export function listCalendarSources(): CalendarSource[] {
 }
 
 export function addCalendarSource(calendarId: string, label: string): CalendarSource {
-  const trimmedId = calendarId.trim()
+  const trimmedId = parseCalendarId(calendarId)
   const trimmedLabel = label.trim() || trimmedId
   getDb()
     .prepare(
@@ -137,11 +157,21 @@ export async function syncGoogleCalendar(): Promise<SyncOutcome> {
   const errors: { calendarId: string; message: string }[] = []
 
   for (const src of sources) {
+    // Self-heal any source added before parseCalendarId existed (e.g. a
+    // pasted share link stored verbatim) so it doesn't need manual removal.
+    const calendarId = parseCalendarId(src.calendar_id)
+    if (calendarId !== src.calendar_id) {
+      db.prepare('UPDATE calendar_sources SET calendar_id = ? WHERE id = ?').run(
+        calendarId,
+        src.id
+      )
+    }
+
     let items: GoogleEventItem[]
     try {
-      items = await fetchAllEvents(client, src.calendar_id, timeMin, timeMax)
+      items = await fetchAllEvents(client, calendarId, timeMin, timeMax)
     } catch (err) {
-      errors.push({ calendarId: src.calendar_id, message: describeGoogleApiError(err) })
+      errors.push({ calendarId, message: describeGoogleApiError(err) })
       continue
     }
 
@@ -156,7 +186,7 @@ export async function syncGoogleCalendar(): Promise<SyncOutcome> {
         const allDay = Boolean(item.start?.date && !item.start?.dateTime)
 
         upsert.run({
-          calendar_id: src.calendar_id,
+          calendar_id: calendarId,
           google_event_id: item.id,
           title: item.summary ?? '(無標題)',
           location: item.location ?? null,
@@ -173,12 +203,12 @@ export async function syncGoogleCalendar(): Promise<SyncOutcome> {
           `DELETE FROM events
            WHERE calendar_id = ? AND source = 'google' AND start_at >= ? AND start_at < ?
            AND google_event_id NOT IN (${placeholders})`
-        ).run(src.calendar_id, timeMin.toISOString(), timeMax.toISOString(), ...seenIds)
+        ).run(calendarId, timeMin.toISOString(), timeMax.toISOString(), ...seenIds)
       } else {
         db.prepare(
           `DELETE FROM events
            WHERE calendar_id = ? AND source = 'google' AND start_at >= ? AND start_at < ?`
-        ).run(src.calendar_id, timeMin.toISOString(), timeMax.toISOString())
+        ).run(calendarId, timeMin.toISOString(), timeMax.toISOString())
       }
 
       db.exec('COMMIT')

@@ -160,7 +160,7 @@ export default function Settings() {
           <a href="#" onClick={openCalendarSettings}>
             Google 日曆設定
           </a>{' '}
-          點選該日曆 →「整合」→ 複製「日曆 ID」貼在下面新增。分享的日曆要先在 Google 日曆裡接受邀請、確定它出現在你的日曆清單中,才有辦法用 ID 同步。
+          點選該日曆 →「整合」→ 複製「日曆 ID」或「公開網址」貼在下面新增(兩種格式都吃,貼分享連結的話會自動解析出日曆 ID)。分享的日曆要先在 Google 日曆裡接受邀請、確定它出現在你的日曆清單中,才有辦法同步。
         </p>
 
         <form className="settings-form" onSubmit={handleAddSource}>

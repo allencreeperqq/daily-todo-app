@@ -4,6 +4,17 @@ import { closeDb, getDb } from './db'
 import { createTray } from './tray'
 import { startScheduler } from './scheduler'
 import { createTask, deleteTask, listTasks, toggleTaskComplete, updateTask } from './tasks'
+import {
+  createAccount,
+  createTransaction,
+  deleteBudget,
+  deleteTransaction,
+  getMonthlySummary,
+  listAccounts,
+  listBudgets,
+  listTransactions,
+  upsertBudget
+} from './finance'
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -43,6 +54,16 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tasks:update', (_event, id, patch) => updateTask(id, patch))
   ipcMain.handle('tasks:toggle', (_event, id, completed) => toggleTaskComplete(id, completed))
   ipcMain.handle('tasks:delete', (_event, id) => deleteTask(id))
+
+  ipcMain.handle('finance:accounts:list', () => listAccounts())
+  ipcMain.handle('finance:accounts:create', (_event, input) => createAccount(input))
+  ipcMain.handle('finance:transactions:list', (_event, month) => listTransactions(month))
+  ipcMain.handle('finance:transactions:create', (_event, input) => createTransaction(input))
+  ipcMain.handle('finance:transactions:delete', (_event, id) => deleteTransaction(id))
+  ipcMain.handle('finance:budgets:list', () => listBudgets())
+  ipcMain.handle('finance:budgets:upsert', (_event, input) => upsertBudget(input))
+  ipcMain.handle('finance:budgets:delete', (_event, id) => deleteBudget(id))
+  ipcMain.handle('finance:summary', (_event, month) => getMonthlySummary(month))
 }
 
 app.whenReady().then(() => {

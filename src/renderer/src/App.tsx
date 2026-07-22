@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import Today from './pages/Today'
+import Finance from './pages/Finance'
 
 type PageKey = 'today' | 'finance' | 'settings' | 'plugins'
 
 const NAV_ITEMS: { key: PageKey; label: string; enabled: boolean }[] = [
   { key: 'today', label: '今天', enabled: true },
-  { key: 'finance', label: '記帳', enabled: false },
+  { key: 'finance', label: '記帳', enabled: true },
   { key: 'settings', label: '設定', enabled: false },
   { key: 'plugins', label: '插件', enabled: false }
 ]
@@ -32,7 +33,10 @@ export default function App() {
           ))}
         </ul>
       </nav>
-      <main className="content">{page === 'today' && <Today />}</main>
+      <main className="content">
+        {page === 'today' && <Today />}
+        {page === 'finance' && <Finance />}
+      </main>
     </div>
   )
 }

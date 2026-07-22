@@ -23,6 +23,65 @@ export interface CreateTaskInput {
 
 export type TaskPatch = Partial<CreateTaskInput>
 
+export interface Account {
+  id: number
+  name: string
+  type: string
+  created_at: string
+}
+
+export interface CreateAccountInput {
+  name: string
+  type?: string
+}
+
+export type TransactionType = 'income' | 'expense'
+
+export interface Transaction {
+  id: number
+  account_id: number
+  type: TransactionType
+  amount: number
+  category: string | null
+  note: string | null
+  occurred_at: string
+  created_at: string
+}
+
+export interface CreateTransactionInput {
+  account_id: number
+  type: TransactionType
+  amount: number
+  category?: string | null
+  note?: string | null
+  occurred_at?: string
+}
+
+export interface Budget {
+  id: number
+  category: string
+  monthly_limit: number
+  created_at: string
+}
+
+export interface CreateBudgetInput {
+  category: string
+  monthly_limit: number
+}
+
+export interface CategorySpend {
+  category: string
+  total: number
+}
+
+export interface MonthlySummary {
+  month: string
+  income: number
+  expense: number
+  net: number
+  byCategory: CategorySpend[]
+}
+
 export interface DailyTodoApi {
   tasks: {
     list(): Promise<Task[]>
@@ -30,5 +89,16 @@ export interface DailyTodoApi {
     update(id: number, patch: TaskPatch): Promise<Task | undefined>
     toggle(id: number, completed: boolean): Promise<Task | undefined>
     delete(id: number): Promise<void>
+  }
+  finance: {
+    listAccounts(): Promise<Account[]>
+    createAccount(input: CreateAccountInput): Promise<Account>
+    listTransactions(month?: string): Promise<Transaction[]>
+    createTransaction(input: CreateTransactionInput): Promise<Transaction>
+    deleteTransaction(id: number): Promise<void>
+    listBudgets(): Promise<Budget[]>
+    upsertBudget(input: CreateBudgetInput): Promise<Budget>
+    deleteBudget(id: number): Promise<void>
+    getMonthlySummary(month?: string): Promise<MonthlySummary>
   }
 }

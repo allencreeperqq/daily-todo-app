@@ -1,4 +1,4 @@
-import { BrowserWindow, app, ipcMain } from 'electron'
+import { BrowserWindow, app, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
 import { closeDb, getDb } from './db'
 import { createTray } from './tray'
@@ -15,6 +15,14 @@ import {
   listTransactions,
   upsertBudget
 } from './finance'
+import {
+  connectGoogleAccount,
+  disconnectGoogleAccount,
+  isGoogleConfigured,
+  isGoogleConnected,
+  setGoogleClientConfig
+} from './googleAuth'
+import { listEvents, syncGoogleCalendar } from './googleCalendar'
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -64,6 +72,20 @@ function registerIpcHandlers(): void {
   ipcMain.handle('finance:budgets:upsert', (_event, input) => upsertBudget(input))
   ipcMain.handle('finance:budgets:delete', (_event, id) => deleteBudget(id))
   ipcMain.handle('finance:summary', (_event, month) => getMonthlySummary(month))
+
+  ipcMain.handle('calendar:google:status', () => ({
+    configured: isGoogleConfigured(),
+    connected: isGoogleConnected()
+  }))
+  ipcMain.handle('calendar:google:setConfig', (_event, clientId, clientSecret) =>
+    setGoogleClientConfig(clientId, clientSecret)
+  )
+  ipcMain.handle('calendar:google:connect', () => connectGoogleAccount())
+  ipcMain.handle('calendar:google:disconnect', () => disconnectGoogleAccount())
+  ipcMain.handle('calendar:google:sync', () => syncGoogleCalendar())
+  ipcMain.handle('calendar:events:list', (_event, from, to) => listEvents(from, to))
+
+  ipcMain.handle('shell:openExternal', (_event, url) => shell.openExternal(url))
 }
 
 app.whenReady().then(() => {

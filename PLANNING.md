@@ -35,7 +35,7 @@ tasks(
 ```
 
 ### 2.2 日曆整合 (Google)
-- **Google Calendar**:OAuth2 (loopback redirect,`googleapis` 套件),用 `syncToken` 做增量同步,背景每 15 分鐘刷新一次 + 手動刷新按鈕。
+- **Google Calendar**:OAuth2(loopback redirect,`google-auth-library` 處理授權 + token 刷新,直接呼叫 REST API 而非整包 `googleapis` SDK,依賴更輕量),背景每 15 分鐘刷新一次 + 手動刷新按鈕。目前每次同步是抓「前 1 天到後 30 天」的時間窗,還沒做 `syncToken` 增量同步(資料量小,先簡單可靠優先,之後量大再優化)。
 - 本地維護一張 `events` cache table,合併 Google + 本地待辦成單一「今日議程」視圖。
 - 先做「唯讀同步」較安全,雙向寫入之後再評估要不要做。
 - ~~Apple / iCloud 日曆~~:使用者決定暫不需要,已移出目前開發範圍。日後若要加,做法是把 iCloud 當 CalDAV 帳號串接(用 App 專用密碼 + `tsdav`),跟 Google 是平行路徑,schema 不需為此重做。

@@ -1,15 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Task } from '../../../shared/types'
+import type { CalendarEvent, Task } from '../../../shared/types'
 
 export default function Today() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>([])
   const [title, setTitle] = useState('')
   const [dueAt, setDueAt] = useState('')
   const [loading, setLoading] = useState(true)
 
   async function refresh(): Promise<void> {
-    const list = await window.api.tasks.list()
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date(todayStart)
+    todayEnd.setDate(todayEnd.getDate() + 1)
+
+    const [list, todaysEvents] = await Promise.all([
+      window.api.tasks.list(),
+      window.api.calendar.listEvents(todayStart.toISOString(), todayEnd.toISOString())
+    ])
     setTasks(list)
+    setEvents(todaysEvents)
     setLoading(false)
   }
 
@@ -65,6 +75,27 @@ export default function Today() {
         />
         <button type="submit">新增</button>
       </form>
+
+      <section>
+        <h2>今日行程 ({events.length})</h2>
+        <ul className="event-list">
+          {events.map((ev) => (
+            <li key={ev.id}>
+              <span className="event-time">
+                {ev.all_day
+                  ? '整天'
+                  : new Date(ev.start_at).toLocaleTimeString('zh-TW', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+              </span>
+              <span className="event-title">{ev.title}</span>
+              {ev.location && <span className="event-location">{ev.location}</span>}
+            </li>
+          ))}
+          {events.length === 0 && <li className="empty">今天沒有 Google 日曆行程</li>}
+        </ul>
+      </section>
 
       <section>
         <h2>待辦 ({pending.length})</h2>

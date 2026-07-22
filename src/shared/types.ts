@@ -82,6 +82,27 @@ export interface MonthlySummary {
   byCategory: CategorySpend[]
 }
 
+export interface CalendarEvent {
+  id: number
+  google_event_id: string | null
+  title: string
+  location: string | null
+  start_at: string
+  end_at: string | null
+  all_day: boolean
+  source: string
+  synced_at: string
+}
+
+export interface GoogleAuthStatus {
+  configured: boolean
+  connected: boolean
+}
+
+export interface SyncResult {
+  count: number
+}
+
 export interface DailyTodoApi {
   tasks: {
     list(): Promise<Task[]>
@@ -100,5 +121,16 @@ export interface DailyTodoApi {
     upsertBudget(input: CreateBudgetInput): Promise<Budget>
     deleteBudget(id: number): Promise<void>
     getMonthlySummary(month?: string): Promise<MonthlySummary>
+  }
+  calendar: {
+    getGoogleAuthStatus(): Promise<GoogleAuthStatus>
+    setGoogleClientConfig(clientId: string, clientSecret: string): Promise<void>
+    connectGoogle(): Promise<void>
+    disconnectGoogle(): Promise<void>
+    syncGoogle(): Promise<SyncResult>
+    listEvents(fromIso: string, toIso: string): Promise<CalendarEvent[]>
+  }
+  shell: {
+    openExternal(url: string): Promise<void>
   }
 }

@@ -28,6 +28,19 @@ const api: DailyTodoApi = {
     upsertBudget: (input: CreateBudgetInput) => ipcRenderer.invoke('finance:budgets:upsert', input),
     deleteBudget: (id: number) => ipcRenderer.invoke('finance:budgets:delete', id),
     getMonthlySummary: (month?: string) => ipcRenderer.invoke('finance:summary', month)
+  },
+  calendar: {
+    getGoogleAuthStatus: () => ipcRenderer.invoke('calendar:google:status'),
+    setGoogleClientConfig: (clientId: string, clientSecret: string) =>
+      ipcRenderer.invoke('calendar:google:setConfig', clientId, clientSecret),
+    connectGoogle: () => ipcRenderer.invoke('calendar:google:connect'),
+    disconnectGoogle: () => ipcRenderer.invoke('calendar:google:disconnect'),
+    syncGoogle: () => ipcRenderer.invoke('calendar:google:sync'),
+    listEvents: (fromIso: string, toIso: string) =>
+      ipcRenderer.invoke('calendar:events:list', fromIso, toIso)
+  },
+  shell: {
+    openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
   }
 }
 

@@ -7,6 +7,7 @@ import { createTask, deleteTask, listTasks, toggleTaskComplete, updateTask } fro
 import {
   createAccount,
   createTransaction,
+  deleteAccount,
   deleteBudget,
   deleteTransaction,
   getMonthlySummary,
@@ -23,7 +24,14 @@ import {
   isGoogleConnected,
   setGoogleClientConfig
 } from './googleAuth'
-import { listEvents, syncGoogleCalendar } from './googleCalendar'
+import {
+  addCalendarSource,
+  hideEvent,
+  listCalendarSources,
+  listEvents,
+  removeCalendarSource,
+  syncGoogleCalendar
+} from './googleCalendar'
 import { loadPlugins, type LoadedPlugin } from './plugins/loader'
 import type { PluginCommand } from './plugins/api'
 import { closeAllToasts, showToast } from './toast'
@@ -39,9 +47,13 @@ function createWindow(): void {
     height: 680,
     show: false,
     frame: false,
-    transparent: true, // required for backgroundColor alpha / backgroundMaterial to actually show through
+    // backgroundMaterial: 'acrylic' does not render on this machine regardless of the
+    // transparent:true setting (confirmed: the toast window, which uses plain
+    // transparent:true with no backgroundMaterial, renders transparent correctly; this
+    // window with backgroundMaterial did not, with or without transparent:true). Falling
+    // back to the same mechanism that's proven to work here: plain window transparency.
+    transparent: true,
     backgroundColor: '#00000000',
-    backgroundMaterial: 'acrylic', // Windows 11 native frosted-glass backdrop; no-op elsewhere
     roundedCorners: true,
     autoHideMenuBar: true,
     icon: join(__dirname, '../../resources/icon.png'),
@@ -76,6 +88,7 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('finance:accounts:list', () => listAccounts())
   ipcMain.handle('finance:accounts:create', (_event, input) => createAccount(input))
+  ipcMain.handle('finance:accounts:delete', (_event, id) => deleteAccount(id))
   ipcMain.handle('finance:transactions:list', (_event, month) => listTransactions(month))
   ipcMain.handle('finance:transactions:create', (_event, input) => createTransaction(input))
   ipcMain.handle('finance:transactions:delete', (_event, id) => deleteTransaction(id))
@@ -96,6 +109,12 @@ function registerIpcHandlers(): void {
   ipcMain.handle('calendar:google:disconnect', () => disconnectGoogleAccount())
   ipcMain.handle('calendar:google:sync', () => syncGoogleCalendar())
   ipcMain.handle('calendar:events:list', (_event, from, to) => listEvents(from, to))
+  ipcMain.handle('calendar:events:hide', (_event, id) => hideEvent(id))
+  ipcMain.handle('calendar:sources:list', () => listCalendarSources())
+  ipcMain.handle('calendar:sources:add', (_event, calendarId, label) =>
+    addCalendarSource(calendarId, label)
+  )
+  ipcMain.handle('calendar:sources:remove', (_event, id) => removeCalendarSource(id))
 
   ipcMain.handle('shell:openExternal', (_event, url) => shell.openExternal(url))
 

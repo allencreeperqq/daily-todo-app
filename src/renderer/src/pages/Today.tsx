@@ -42,6 +42,7 @@ function isSameDay(a: Date, b: Date): boolean {
 
 interface AgendaItem {
   key: string
+  id: number
   timeLabel: string | null
   title: string
   kind: 'task' | 'event'
@@ -58,6 +59,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
     const due = new Date(task.due_at)
     items.push({
       key: `task-${task.id}`,
+      id: task.id,
       timeLabel: due.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
       title: task.title,
       kind: 'task',
@@ -71,6 +73,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
     const start = new Date(event.start_at)
     items.push({
       key: `event-${event.id}`,
+      id: event.id,
       timeLabel: event.all_day
         ? '整天'
         : start.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
@@ -146,6 +149,11 @@ export default function Today() {
 
   async function handleDelete(id: number): Promise<void> {
     await window.api.tasks.delete(id)
+    await refresh()
+  }
+
+  async function handleHideEvent(id: number): Promise<void> {
+    await window.api.calendar.hideEvent(id)
     await refresh()
   }
 
@@ -257,6 +265,13 @@ export default function Today() {
                   </span>
                   <span className="event-title">{ev.title}</span>
                   {ev.location && <span className="event-location">{ev.location}</span>}
+                  <button
+                    className="delete"
+                    onClick={() => handleHideEvent(ev.id)}
+                    aria-label="刪除"
+                  >
+                    刪除
+                  </button>
                 </li>
               ))}
               {eventsToday.length === 0 && <li className="empty">今天沒有 Google 日曆行程</li>}
@@ -320,9 +335,18 @@ export default function Today() {
         <MonthGrid anchor={anchor} tasks={tasks} events={events} today={todayDate} onSelectDay={goToDay} />
       )}
       {viewMode === 'week' && (
-        <WeekAgenda anchor={anchor} tasks={tasks} events={events} today={todayDate} onSelectDay={goToDay} />
+        <WeekAgenda
+          anchor={anchor}
+          tasks={tasks}
+          events={events}
+          today={todayDate}
+          onSelectDay={goToDay}
+          onHideEvent={handleHideEvent}
+        />
       )}
-      {viewMode === 'day' && <DayAgenda day={anchor} tasks={tasks} events={events} />}
+      {viewMode === 'day' && (
+        <DayAgenda day={anchor} tasks={tasks} events={events} onHideEvent={handleHideEvent} />
+      )}
     </div>
   )
 }
@@ -388,13 +412,15 @@ function WeekAgenda({
   tasks,
   events,
   today,
-  onSelectDay
+  onSelectDay,
+  onHideEvent
 }: {
   anchor: Date
   tasks: Task[]
   events: CalendarEvent[]
   today: Date
   onSelectDay: (d: Date) => void
+  onHideEvent: (id: number) => void
 }) {
   const from = startOfWeek(anchor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
@@ -419,6 +445,15 @@ function WeekAgenda({
                 >
                   {item.timeLabel && <span className="agenda-time">{item.timeLabel}</span>}
                   <span className="agenda-title">{item.title}</span>
+                  {item.kind === 'event' && (
+                    <button
+                      className="delete"
+                      onClick={() => onHideEvent(item.id)}
+                      aria-label="刪除"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -432,11 +467,13 @@ function WeekAgenda({
 function DayAgenda({
   day,
   tasks,
-  events
+  events,
+  onHideEvent
 }: {
   day: Date
   tasks: Task[]
   events: CalendarEvent[]
+  onHideEvent: (id: number) => void
 }) {
   const items = buildAgenda(day, tasks, events)
 
@@ -449,6 +486,11 @@ function DayAgenda({
             <span className="agenda-time">{item.timeLabel ?? '整天'}</span>
             <span className="agenda-title">{item.title}</span>
             <span className="agenda-kind">{item.kind === 'task' ? '待辦' : 'Google 日曆'}</span>
+            {item.kind === 'event' && (
+              <button className="delete" onClick={() => onHideEvent(item.id)} aria-label="刪除">
+                刪除
+              </button>
+            )}
           </li>
         ))}
       </ul>

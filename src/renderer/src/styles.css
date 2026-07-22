@@ -1,6 +1,6 @@
 :root {
-  --bg: rgba(246, 247, 250, 0.72);
-  --surface: rgba(255, 255, 255, 0.68);
+  --bg: rgba(246, 247, 250, 0.85);
+  --surface: rgba(255, 255, 255, 0.8);
   --text: #1a1d23;
   --muted: #6b7280;
   --border: rgba(79, 70, 229, 0.16);
@@ -13,8 +13,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: rgba(12, 14, 19, 0.62);
-    --surface: rgba(30, 34, 46, 0.58);
+    --bg: rgba(12, 14, 19, 0.8);
+    --surface: rgba(30, 34, 46, 0.75);
     --text: #e8e9ec;
     --muted: #9aa0ab;
     --border: rgba(129, 140, 248, 0.22);
@@ -176,6 +176,7 @@ body {
 .budget-form button,
 .settings-form button,
 .plugin-commands button,
+.account-form button,
 .view-switch button.active {
   box-shadow: 0 0 0 1px var(--accent-glow), 0 0 16px var(--accent-glow);
 }
@@ -441,6 +442,72 @@ body {
   flex: 1;
 }
 
+.accounts-section {
+  margin-bottom: 28px;
+}
+
+.account-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.account-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.account-form select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.account-form button {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.account-name {
+  font-weight: 600;
+}
+
+.account-type {
+  color: var(--muted);
+}
+
 .tx-list {
   list-style: none;
   margin: 0;
@@ -624,6 +691,39 @@ body {
 .settings-message {
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.source-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.source-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.source-id {
+  flex: 1;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Plugins page */

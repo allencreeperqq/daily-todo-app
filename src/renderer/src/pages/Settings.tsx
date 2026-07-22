@@ -1,15 +1,23 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from 'react'
-import type { GoogleAuthStatus } from '../../../shared/types'
+import type { CalendarSource, GoogleAuthStatus } from '../../../shared/types'
 
 export default function Settings() {
   const [status, setStatus] = useState<GoogleAuthStatus | null>(null)
+  const [sources, setSources] = useState<CalendarSource[]>([])
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
+  const [newCalendarId, setNewCalendarId] = useState('')
+  const [newCalendarLabel, setNewCalendarLabel] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
   async function refresh(): Promise<void> {
-    setStatus(await window.api.calendar.getGoogleAuthStatus())
+    const [authStatus, sourceList] = await Promise.all([
+      window.api.calendar.getGoogleAuthStatus(),
+      window.api.calendar.listSources()
+    ])
+    setStatus(authStatus)
+    setSources(sourceList)
   }
 
   useEffect(() => {
@@ -45,7 +53,12 @@ export default function Settings() {
     setBusy(true)
     try {
       const result = await window.api.calendar.syncGoogle()
-      setMessage(`已同步 ${result.count} 筆行程`)
+      if (result.errors.length > 0) {
+        const detail = result.errors.map((e) => `${e.calendarId}(${e.message})`).join('、')
+        setMessage(`已同步 ${result.count} 筆行程,但有日曆失敗:${detail}`)
+      } else {
+        setMessage(`已同步 ${result.count} 筆行程`)
+      }
     } catch (err) {
       setMessage(`同步失敗:${(err as Error).message}`)
     } finally {
@@ -59,9 +72,28 @@ export default function Settings() {
     await refresh()
   }
 
+  async function handleAddSource(e: FormEvent): Promise<void> {
+    e.preventDefault()
+    if (!newCalendarId.trim()) return
+    await window.api.calendar.addSource(newCalendarId.trim(), newCalendarLabel.trim())
+    setNewCalendarId('')
+    setNewCalendarLabel('')
+    await refresh()
+  }
+
+  async function handleRemoveSource(id: number): Promise<void> {
+    await window.api.calendar.removeSource(id)
+    await refresh()
+  }
+
   function openCredentialsConsole(e: MouseEvent): void {
     e.preventDefault()
     window.api.shell.openExternal('https://console.cloud.google.com/apis/credentials')
+  }
+
+  function openCalendarSettings(e: MouseEvent): void {
+    e.preventDefault()
+    window.api.shell.openExternal('https://calendar.google.com/calendar/u/0/r/settings')
   }
 
   if (!status) return <p className="loading">載入中...</p>
@@ -119,6 +151,45 @@ export default function Settings() {
         </div>
 
         {message && <p className="settings-message">{message}</p>}
+      </section>
+
+      <section className="settings-section">
+        <h2>日曆來源</h2>
+        <p className="settings-hint">
+          預設只同步「主要日曆」。如果你有其他日曆(自己建立的次要日曆,或別人分享給你、你已經接受邀請的日曆),到{' '}
+          <a href="#" onClick={openCalendarSettings}>
+            Google 日曆設定
+          </a>{' '}
+          點選該日曆 →「整合」→ 複製「日曆 ID」貼在下面新增。分享的日曆要先在 Google 日曆裡接受邀請、確定它出現在你的日曆清單中,才有辦法用 ID 同步。
+        </p>
+
+        <form className="settings-form" onSubmit={handleAddSource}>
+          <input
+            type="text"
+            placeholder="日曆 ID(例如 xxxx@group.calendar.google.com)"
+            value={newCalendarId}
+            onChange={(e) => setNewCalendarId(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="顯示名稱(選填)"
+            value={newCalendarLabel}
+            onChange={(e) => setNewCalendarLabel(e.target.value)}
+          />
+          <button type="submit">新增</button>
+        </form>
+
+        <ul className="source-list">
+          {sources.map((src) => (
+            <li key={src.id}>
+              <span className="source-label">{src.label}</span>
+              <span className="source-id">{src.calendar_id}</span>
+              <button className="delete" onClick={() => handleRemoveSource(src.id)}>
+                移除
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="settings-section">

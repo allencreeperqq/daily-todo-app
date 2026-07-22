@@ -84,6 +84,7 @@ export interface MonthlySummary {
 
 export interface CalendarEvent {
   id: number
+  calendar_id: string
   google_event_id: string | null
   title: string
   location: string | null
@@ -91,7 +92,15 @@ export interface CalendarEvent {
   end_at: string | null
   all_day: boolean
   source: string
+  hidden: boolean
   synced_at: string
+}
+
+export interface CalendarSource {
+  id: number
+  calendar_id: string
+  label: string
+  created_at: string
 }
 
 export interface GoogleAuthStatus {
@@ -101,6 +110,7 @@ export interface GoogleAuthStatus {
 
 export interface SyncResult {
   count: number
+  errors: { calendarId: string; message: string }[]
 }
 
 export interface PluginInfo {
@@ -131,6 +141,7 @@ export interface DailyTodoApi {
   finance: {
     listAccounts(): Promise<Account[]>
     createAccount(input: CreateAccountInput): Promise<Account>
+    deleteAccount(id: number): Promise<{ ok: boolean; message?: string }>
     listTransactions(month?: string): Promise<Transaction[]>
     createTransaction(input: CreateTransactionInput): Promise<Transaction>
     deleteTransaction(id: number): Promise<void>
@@ -147,6 +158,10 @@ export interface DailyTodoApi {
     disconnectGoogle(): Promise<void>
     syncGoogle(): Promise<SyncResult>
     listEvents(fromIso: string, toIso: string): Promise<CalendarEvent[]>
+    hideEvent(id: number): Promise<void>
+    listSources(): Promise<CalendarSource[]>
+    addSource(calendarId: string, label: string): Promise<CalendarSource>
+    removeSource(id: number): Promise<void>
   }
   shell: {
     openExternal(url: string): Promise<void>

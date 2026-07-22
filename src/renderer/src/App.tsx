@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Today from './pages/Today'
 import Finance from './pages/Finance'
 import Settings from './pages/Settings'
+import Plugins from './pages/Plugins'
 
 type PageKey = 'today' | 'finance' | 'settings' | 'plugins'
 
@@ -9,7 +10,7 @@ const NAV_ITEMS: { key: PageKey; label: string; enabled: boolean }[] = [
   { key: 'today', label: '今天', enabled: true },
   { key: 'finance', label: '記帳', enabled: true },
   { key: 'settings', label: '設定', enabled: true },
-  { key: 'plugins', label: '插件', enabled: false }
+  { key: 'plugins', label: '插件', enabled: true }
 ]
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
         {page === 'today' && <Today />}
         {page === 'finance' && <Finance />}
         {page === 'settings' && <Settings />}
+        {page === 'plugins' && <Plugins />}
       </main>
     </div>
   )

@@ -23,9 +23,13 @@ import {
   setGoogleClientConfig
 } from './googleAuth'
 import { listEvents, syncGoogleCalendar } from './googleCalendar'
+import { loadPlugins, type LoadedPlugin } from './plugins/loader'
+import type { PluginCommand } from './plugins/api'
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+let loadedPlugins: LoadedPlugin[] = []
+let pluginCommands: PluginCommand[] = []
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -86,18 +90,32 @@ function registerIpcHandlers(): void {
   ipcMain.handle('calendar:events:list', (_event, from, to) => listEvents(from, to))
 
   ipcMain.handle('shell:openExternal', (_event, url) => shell.openExternal(url))
+
+  ipcMain.handle('plugins:list', () => ({
+    plugins: loadedPlugins,
+    commands: pluginCommands.map(({ id, pluginId, label }) => ({ id, pluginId, label }))
+  }))
+  ipcMain.handle('plugins:run', (_event, commandId) => {
+    pluginCommands.find((cmd) => cmd.id === commandId)?.handler()
+  })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   getDb()
   registerIpcHandlers()
   createWindow()
+
+  const loaded = await loadPlugins()
+  loadedPlugins = loaded.plugins
+  pluginCommands = loaded.commands
+
   createTray(
     () => mainWindow?.show(),
     () => {
       isQuitting = true
       app.quit()
-    }
+    },
+    pluginCommands
   )
   startScheduler()
 

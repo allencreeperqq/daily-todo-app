@@ -1,0 +1,6 @@
+{
+  "id": "metronome",
+  "name": "節拍器",
+  "version": "0.1.0",
+  "main": "main.mjs"
+}

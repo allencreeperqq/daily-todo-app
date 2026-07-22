@@ -103,6 +103,23 @@ export interface SyncResult {
   count: number
 }
 
+export interface PluginInfo {
+  id: string
+  name: string
+  version: string
+}
+
+export interface PluginCommandInfo {
+  id: string
+  pluginId: string
+  label: string
+}
+
+export interface PluginsList {
+  plugins: PluginInfo[]
+  commands: PluginCommandInfo[]
+}
+
 export interface DailyTodoApi {
   tasks: {
     list(): Promise<Task[]>
@@ -132,5 +149,9 @@ export interface DailyTodoApi {
   }
   shell: {
     openExternal(url: string): Promise<void>
+  }
+  plugins: {
+    list(): Promise<PluginsList>
+    run(commandId: string): Promise<void>
   }
 }

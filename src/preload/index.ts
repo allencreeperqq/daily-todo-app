@@ -41,6 +41,10 @@ const api: DailyTodoApi = {
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
+  },
+  plugins: {
+    list: () => ipcRenderer.invoke('plugins:list'),
+    run: (commandId: string) => ipcRenderer.invoke('plugins:run', commandId)
   }
 }
 

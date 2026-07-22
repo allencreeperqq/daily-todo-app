@@ -1,14 +1,14 @@
 import { OAuth2Client, type Credentials } from 'google-auth-library'
 import { shell } from 'electron'
 import http from 'node:http'
-import { getJsonSecret, getSecret, getSetting, setJsonSecret, setSecret, setSetting } from './settings'
+import { getJsonSetting, getSetting, setJsonSetting, setSetting } from './settings'
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 const AUTH_TIMEOUT_MS = 120_000
 
 function getClientConfig(): { clientId: string; clientSecret: string } | null {
   const clientId = getSetting('google_client_id')
-  const clientSecret = getSecret('google_client_secret')
+  const clientSecret = getSetting('google_client_secret')
   if (!clientId || !clientSecret) return null
   return { clientId, clientSecret }
 }
@@ -18,16 +18,16 @@ export function isGoogleConfigured(): boolean {
 }
 
 export function isGoogleConnected(): boolean {
-  return getJsonSecret<Credentials>('google_tokens') !== null
+  return getJsonSetting<Credentials>('google_tokens') !== null
 }
 
 export function setGoogleClientConfig(clientId: string, clientSecret: string): void {
   setSetting('google_client_id', clientId)
-  setSecret('google_client_secret', clientSecret)
+  setSetting('google_client_secret', clientSecret)
 }
 
 export function disconnectGoogleAccount(): void {
-  setSecret('google_tokens', null)
+  setSetting('google_tokens', null)
 }
 
 function waitForAuthorizationCode(
@@ -97,19 +97,19 @@ export async function connectGoogleAccount(): Promise<void> {
     redirectUri
   })
   const { tokens } = await client.getToken(code)
-  setJsonSecret('google_tokens', tokens)
+  setJsonSetting('google_tokens', tokens)
 }
 
 export async function getAuthorizedClient(): Promise<OAuth2Client> {
   const config = getClientConfig()
   if (!config) throw new Error('尚未設定 Google Client ID / Secret')
-  const tokens = getJsonSecret<Credentials>('google_tokens')
+  const tokens = getJsonSetting<Credentials>('google_tokens')
   if (!tokens) throw new Error('尚未連接 Google 帳號')
 
   const client = new OAuth2Client({ clientId: config.clientId, clientSecret: config.clientSecret })
   client.setCredentials(tokens)
   client.on('tokens', (newTokens) => {
-    setJsonSecret('google_tokens', { ...tokens, ...newTokens })
+    setJsonSetting('google_tokens', { ...tokens, ...newTokens })
   })
   return client
 }

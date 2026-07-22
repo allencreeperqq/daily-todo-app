@@ -57,9 +57,62 @@ body {
   background: var(--accent);
 }
 
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.titlebar {
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: drag;
+  padding-left: 14px;
+}
+
+.titlebar-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.titlebar-buttons {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 44px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.titlebar-btn:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--text);
+}
+
+.titlebar-btn.close:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
 .app-shell {
   display: flex;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
 }
 
 .sidebar {
@@ -97,7 +150,7 @@ body {
   text-align: left;
   padding: 10px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
   color: var(--text);
   font-size: 0.95rem;
@@ -160,7 +213,7 @@ body {
 .add-task-form input,
 .add-task-form button {
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -191,7 +244,7 @@ body {
   padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 .task-list li.empty {
@@ -253,7 +306,7 @@ body {
 .month-nav button {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -275,7 +328,7 @@ body {
   padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
 }
 
 .stat-label {
@@ -307,7 +360,7 @@ body {
 .add-tx-form select,
 .budget-form input {
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -321,7 +374,7 @@ body {
 .add-tx-form button,
 .budget-form button {
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   background: var(--accent);
   color: var(--accent-contrast);
@@ -404,7 +457,7 @@ body {
   padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 .tx-list li.empty {
@@ -463,7 +516,7 @@ body {
   padding: 10px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 .event-list li.empty {
@@ -531,7 +584,7 @@ body {
 .settings-form input {
   flex: 1;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -539,7 +592,7 @@ body {
 
 .settings-form button {
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   background: var(--accent);
   color: var(--accent-contrast);
@@ -556,7 +609,7 @@ body {
 
 .settings-actions button {
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -600,7 +653,7 @@ body {
   padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
 }
 
 .plugin-info {
@@ -625,7 +678,7 @@ body {
 
 .plugin-commands button {
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   background: var(--accent);
   color: var(--accent-contrast);
@@ -656,7 +709,7 @@ body {
   display: flex;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -683,7 +736,7 @@ body {
 
 .date-nav button {
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -729,7 +782,7 @@ body {
   padding: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -804,7 +857,7 @@ body {
   gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 10px;
   min-height: 240px;
 }
@@ -859,7 +912,7 @@ body {
   gap: 6px;
   font-size: 0.78rem;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .agenda-item.task {
@@ -984,7 +1037,7 @@ body {
 .trend-chart {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 16px 20px;
 }
 

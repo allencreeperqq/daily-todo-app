@@ -49,6 +49,10 @@ const api: DailyTodoApi = {
   },
   notifications: {
     test: () => ipcRenderer.invoke('notifications:test')
+  },
+  window: {
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    close: () => ipcRenderer.invoke('window:close')
   }
 }
 

@@ -11,6 +11,11 @@ interface GoogleEventItem {
   end?: { date?: string; dateTime?: string }
 }
 
+interface GoogleEventsResponse {
+  items?: GoogleEventItem[]
+  nextPageToken?: string
+}
+
 interface EventRow {
   id: number
   google_event_id: string | null
@@ -23,8 +28,35 @@ interface EventRow {
   synced_at: string
 }
 
-const SYNC_DAYS_BACK = 1
-const SYNC_DAYS_FORWARD = 30
+// A rolling window, not just "today" — wide enough to cover browsing several
+// months back/forward in the calendar grid without needing a per-view sync.
+const SYNC_DAYS_BACK = 90
+const SYNC_DAYS_FORWARD = 365
+
+async function fetchAllEvents(
+  client: Awaited<ReturnType<typeof getAuthorizedClient>>,
+  timeMin: Date,
+  timeMax: Date
+): Promise<GoogleEventItem[]> {
+  const items: GoogleEventItem[] = []
+  let pageToken: string | undefined
+
+  do {
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    url.searchParams.set('timeMin', timeMin.toISOString())
+    url.searchParams.set('timeMax', timeMax.toISOString())
+    url.searchParams.set('singleEvents', 'true')
+    url.searchParams.set('orderBy', 'startTime')
+    url.searchParams.set('maxResults', '250')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+
+    const response = await client.request<GoogleEventsResponse>({ url: url.toString() })
+    items.push(...(response.data.items ?? []))
+    pageToken = response.data.nextPageToken
+  } while (pageToken)
+
+  return items
+}
 
 export async function syncGoogleCalendar(): Promise<{ count: number }> {
   const client = await getAuthorizedClient()
@@ -34,15 +66,7 @@ export async function syncGoogleCalendar(): Promise<{ count: number }> {
   const timeMax = new Date()
   timeMax.setDate(timeMax.getDate() + SYNC_DAYS_FORWARD)
 
-  const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
-  url.searchParams.set('timeMin', timeMin.toISOString())
-  url.searchParams.set('timeMax', timeMax.toISOString())
-  url.searchParams.set('singleEvents', 'true')
-  url.searchParams.set('orderBy', 'startTime')
-  url.searchParams.set('maxResults', '250')
-
-  const response = await client.request<{ items?: GoogleEventItem[] }>({ url: url.toString() })
-  const items = response.data.items ?? []
+  const items = await fetchAllEvents(client, timeMin, timeMax)
 
   const db = getDb()
   const upsert = db.prepare(

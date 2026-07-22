@@ -38,9 +38,12 @@ function createWindow(): void {
     width: 980,
     height: 680,
     show: false,
-    autoHideMenuBar: true,
+    frame: false,
+    transparent: true, // required for backgroundColor alpha / backgroundMaterial to actually show through
     backgroundColor: '#00000000',
     backgroundMaterial: 'acrylic', // Windows 11 native frosted-glass backdrop; no-op elsewhere
+    roundedCorners: true,
+    autoHideMenuBar: true,
     icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
@@ -107,6 +110,9 @@ function registerIpcHandlers(): void {
   ipcMain.handle('notifications:test', () => {
     showToast('測試通知', '這是一則測試提醒,確認通知看得到、夠明顯。')
   })
+
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize())
+  ipcMain.handle('window:close', () => mainWindow?.close())
 }
 
 app.whenReady().then(async () => {
@@ -136,6 +142,11 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  // A minimized frameless BrowserWindow can stall Electron's close sequence
+  // on Windows — restoring it first avoids the hang.
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
   closeAllToasts()
 })
 

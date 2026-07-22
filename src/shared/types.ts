@@ -158,4 +158,8 @@ export interface DailyTodoApi {
   notifications: {
     test(): Promise<void>
   }
+  window: {
+    minimize(): Promise<void>
+    close(): Promise<void>
+  }
 }

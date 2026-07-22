@@ -10,6 +10,7 @@ import {
   deleteBudget,
   deleteTransaction,
   getMonthlySummary,
+  getRecentMonthlySummaries,
   listAccounts,
   listBudgets,
   listTransactions,
@@ -25,6 +26,7 @@ import {
 import { listEvents, syncGoogleCalendar } from './googleCalendar'
 import { loadPlugins, type LoadedPlugin } from './plugins/loader'
 import type { PluginCommand } from './plugins/api'
+import { closeAllToasts, showToast } from './toast'
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -37,6 +39,8 @@ function createWindow(): void {
     height: 680,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: '#00000000',
+    backgroundMaterial: 'acrylic', // Windows 11 native frosted-glass backdrop; no-op elsewhere
     icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
@@ -76,6 +80,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('finance:budgets:upsert', (_event, input) => upsertBudget(input))
   ipcMain.handle('finance:budgets:delete', (_event, id) => deleteBudget(id))
   ipcMain.handle('finance:summary', (_event, month) => getMonthlySummary(month))
+  ipcMain.handle('finance:trend', (_event, monthsBack) => getRecentMonthlySummaries(monthsBack))
 
   ipcMain.handle('calendar:google:status', () => ({
     configured: isGoogleConfigured(),
@@ -97,6 +102,10 @@ function registerIpcHandlers(): void {
   }))
   ipcMain.handle('plugins:run', (_event, commandId) => {
     pluginCommands.find((cmd) => cmd.id === commandId)?.handler()
+  })
+
+  ipcMain.handle('notifications:test', () => {
+    showToast('測試通知', '這是一則測試提醒,確認通知看得到、夠明顯。')
   })
 }
 
@@ -127,6 +136,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  closeAllToasts()
 })
 
 app.on('window-all-closed', () => {

@@ -138,6 +138,7 @@ export interface DailyTodoApi {
     upsertBudget(input: CreateBudgetInput): Promise<Budget>
     deleteBudget(id: number): Promise<void>
     getMonthlySummary(month?: string): Promise<MonthlySummary>
+    getRecentTrend(monthsBack?: number): Promise<MonthlySummary[]>
   }
   calendar: {
     getGoogleAuthStatus(): Promise<GoogleAuthStatus>
@@ -153,5 +154,8 @@ export interface DailyTodoApi {
   plugins: {
     list(): Promise<PluginsList>
     run(commandId: string): Promise<void>
+  }
+  notifications: {
+    test(): Promise<void>
   }
 }

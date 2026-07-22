@@ -1,7 +1,7 @@
-import { Notification } from 'electron'
 import { listTasks } from './tasks'
 import { isGoogleConnected } from './googleAuth'
 import { listEvents, syncGoogleCalendar } from './googleCalendar'
+import { showToast } from './toast'
 
 const CHECK_INTERVAL_MS = 60_000
 const CALENDAR_SYNC_INTERVAL_MS = 15 * 60_000
@@ -45,13 +45,10 @@ function checkTaskReminders(now: Date): void {
 
   for (const task of dueSoon) {
     const dueAt = new Date(task.due_at as string)
-    new Notification({
-      title: '待辦提醒',
-      body: `${task.title} — ${dueAt.toLocaleTimeString('zh-TW', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })}`
-    }).show()
+    showToast(
+      '待辦提醒',
+      `${task.title} — ${dueAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`
+    )
     notifiedTaskIds.add(task.id)
   }
 }
@@ -66,13 +63,10 @@ function checkEventReminders(now: Date): void {
 
   for (const event of dueSoon) {
     const startAt = new Date(event.start_at)
-    new Notification({
-      title: '行程提醒',
-      body: `${event.title} — ${startAt.toLocaleTimeString('zh-TW', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })}`
-    }).show()
+    showToast(
+      '行程提醒',
+      `${event.title} — ${startAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`
+    )
     notifiedEventIds.add(event.id)
   }
 }
@@ -90,10 +84,10 @@ function maybeSendMorningDigest(now: Date): void {
   if (eventsToday.length > 0) parts.push(`${eventsToday.length} 個行程`)
   if (todosToday.length > 0) parts.push(`${todosToday.length} 件待辦`)
 
-  new Notification({
-    title: '今日總覽',
-    body: parts.length > 0 ? `今天有 ${parts.join('、')}。` : '今天沒有排定的行程或待辦事項。'
-  }).show()
+  showToast(
+    '今日總覽',
+    parts.length > 0 ? `今天有 ${parts.join('、')}。` : '今天沒有排定的行程或待辦事項。'
+  )
 
   morningDigestSentOn = todayKey
 }

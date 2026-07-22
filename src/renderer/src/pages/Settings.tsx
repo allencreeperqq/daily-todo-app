@@ -120,6 +120,16 @@ export default function Settings() {
 
         {message && <p className="settings-message">{message}</p>}
       </section>
+
+      <section className="settings-section">
+        <h2>提醒通知</h2>
+        <p className="settings-hint">
+          提醒會用一個永遠置頂的小視窗跳出來(不是系統通知中心),不容易被忽略。
+        </p>
+        <div className="settings-actions">
+          <button onClick={() => window.api.notifications.test()}>測試提醒通知</button>
+        </div>
+      </section>
     </div>
   )
 }

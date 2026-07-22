@@ -27,7 +27,8 @@ const api: DailyTodoApi = {
     listBudgets: () => ipcRenderer.invoke('finance:budgets:list'),
     upsertBudget: (input: CreateBudgetInput) => ipcRenderer.invoke('finance:budgets:upsert', input),
     deleteBudget: (id: number) => ipcRenderer.invoke('finance:budgets:delete', id),
-    getMonthlySummary: (month?: string) => ipcRenderer.invoke('finance:summary', month)
+    getMonthlySummary: (month?: string) => ipcRenderer.invoke('finance:summary', month),
+    getRecentTrend: (monthsBack?: number) => ipcRenderer.invoke('finance:trend', monthsBack)
   },
   calendar: {
     getGoogleAuthStatus: () => ipcRenderer.invoke('calendar:google:status'),
@@ -45,6 +46,9 @@ const api: DailyTodoApi = {
   plugins: {
     list: () => ipcRenderer.invoke('plugins:list'),
     run: (commandId: string) => ipcRenderer.invoke('plugins:run', commandId)
+  },
+  notifications: {
+    test: () => ipcRenderer.invoke('notifications:test')
   }
 }
 

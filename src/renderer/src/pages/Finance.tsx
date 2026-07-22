@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import type { Account, Budget, MonthlySummary, Transaction, TransactionType } from '../../../shared/types'
+import type {
+  Account,
+  Budget,
+  MonthlySummary,
+  Transaction,
+  TransactionType
+} from '../../../shared/types'
+import DonutChart, { seriesColor, usePrefersDark, type DonutSlice } from '../components/DonutChart'
+import TrendChart from '../components/TrendChart'
 
 const COMMON_CATEGORIES = ['餐飲', '交通', '購物', '娛樂', '居家', '醫療', '其他']
 
@@ -28,7 +36,9 @@ export default function Finance() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [summary, setSummary] = useState<MonthlySummary | null>(null)
+  const [trend, setTrend] = useState<MonthlySummary[]>([])
   const [loading, setLoading] = useState(true)
+  const isDark = usePrefersDark()
 
   const [txType, setTxType] = useState<TransactionType>('expense')
   const [txAmount, setTxAmount] = useState('')
@@ -41,16 +51,18 @@ export default function Finance() {
   const [budgetLimit, setBudgetLimit] = useState('')
 
   async function refresh(): Promise<void> {
-    const [accountList, txList, budgetList, monthlySummary] = await Promise.all([
+    const [accountList, txList, budgetList, monthlySummary, trendData] = await Promise.all([
       window.api.finance.listAccounts(),
       window.api.finance.listTransactions(month),
       window.api.finance.listBudgets(),
-      window.api.finance.getMonthlySummary(month)
+      window.api.finance.getMonthlySummary(month),
+      window.api.finance.getRecentTrend(6)
     ])
     setAccounts(accountList)
     setTransactions(txList)
     setBudgets(budgetList)
     setSummary(monthlySummary)
+    setTrend(trendData)
     setTxAccountId((current) => current ?? accountList[0]?.id ?? null)
     setLoading(false)
   }
@@ -65,6 +77,20 @@ export default function Finance() {
     for (const b of budgets) set.add(b.category)
     return [...set]
   }, [budgets])
+
+  const donutData: DonutSlice[] = useMemo(() => {
+    if (!summary) return []
+    const top = summary.byCategory.slice(0, 8)
+    const rest = summary.byCategory.slice(8)
+    const slices = top.map((c, i) => ({
+      label: c.category,
+      value: c.total,
+      color: seriesColor(i, isDark)
+    }))
+    const otherTotal = rest.reduce((sum, c) => sum + c.total, 0)
+    if (otherTotal > 0) slices.push({ label: '其他', value: otherTotal, color: seriesColor(8, isDark) })
+    return slices
+  }, [summary, isDark])
 
   async function handleAddTransaction(e: FormEvent): Promise<void> {
     e.preventDefault()
@@ -108,8 +134,6 @@ export default function Finance() {
 
   if (loading || !summary) return <p className="loading">載入中...</p>
 
-  const maxCategoryTotal = Math.max(1, ...summary.byCategory.map((c) => c.total))
-
   return (
     <div className="finance-page">
       <div className="finance-header">
@@ -141,6 +165,14 @@ export default function Finance() {
           </span>
         </div>
       </div>
+
+      <section className="trend-section">
+        <h2>近半年趨勢</h2>
+        <TrendChart
+          data={trend.map((s) => ({ month: s.month, income: s.income, expense: s.expense }))}
+          formatValue={formatAmount}
+        />
+      </section>
 
       <form className="add-tx-form" onSubmit={handleAddTransaction}>
         <select value={txType} onChange={(e) => setTxType(e.target.value as TransactionType)}>
@@ -189,23 +221,12 @@ export default function Finance() {
       <div className="finance-columns">
         <section>
           <h2>分類支出</h2>
-          {summary.byCategory.length === 0 && <p className="empty">本月尚無支出紀錄</p>}
-          <ul className="category-bars">
-            {summary.byCategory.map((c) => (
-              <li key={c.category}>
-                <div className="bar-row">
-                  <span className="bar-label">{c.category}</span>
-                  <span className="bar-amount">{formatAmount(c.total)}</span>
-                </div>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill"
-                    style={{ width: `${(c.total / maxCategoryTotal) * 100}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <DonutChart
+            data={donutData}
+            centerLabel="本月支出"
+            centerValue={formatAmount(summary.expense)}
+            formatValue={formatAmount}
+          />
         </section>
 
         <section>

@@ -48,6 +48,24 @@ npm run build
 
 編譯到 `out/`(main / preload / renderer),桌面捷徑與 `electron.exe .` 都是執行這裡的產物。
 
+## ⚠️ 自動化測試務必使用獨立的 userData 目錄
+
+用 Playwright(或任何腳本)啟動這個 app 來驗證改動時,**絕對不要直接執行 `electron.exe .`**——那會讀寫你正式在用的 `%APPDATA%\daily-todo\daily_todo.db`,測試途中如果強制關閉/砍掉行程(即使只是為了清掉卡住的殘留視窗),都有可能弄丟真實資料(Google 憑證、待辦、記帳紀錄已經因為這樣不見過好幾次)。
+
+正確做法是額外帶一個獨立的 `--user-data-dir`,讓測試用的 app 讀寫完全不同的資料夾:
+
+```bash
+node -e "
+const { _electron } = require('playwright-core');
+_electron.launch({
+  executablePath: 'node_modules/electron/dist/electron.exe',
+  args: ['.', '--user-data-dir=/path/to/scratch/test-profile']
+});
+"
+```
+
+這樣測試中不管怎麼強制關閉行程,都只會影響那個暫存的 test-profile 資料夾,不會碰到真實資料庫。
+
 ## 資料儲存
 
 本地資料存放於 Electron 的 `userData` 目錄:`%APPDATA%\daily-todo\daily_todo.db`(SQLite),**不在專案資料夾內、不會被 git 追蹤**(`.gitignore` 已排除 `*.db*`)。首次啟動會自動套用 `migrations/` 內的 schema。

@@ -29,8 +29,10 @@
 
 ### 插件系統
 - 把插件資料夾放進專案根目錄的 `plugins/` 即可載入,格式仿 Obsidian:`manifest.json`(id/name/version/main)+ 進入點模組(`export function onload(app) {...}`)。
-- 插件可用的 API:`app.registerCommand()`(出現在系統匣選單與「插件」頁)、`app.showNotification()`、`app.openPanel()`(開一個獨立小視窗)、`app.storage`(插件專屬的 key-value 儲存)。
+- 插件可用的 API:`app.registerCommand()`(出現在系統匣選單與「插件」頁)、`app.showNotification()`、`app.openPanel(htmlOrUrl, options)`(開一個獨立小視窗,傳本地 HTML 相對路徑或 `http(s)://` 網址都可以,回傳該 `BrowserWindow`)、`app.storage`(插件專屬的 key-value 儲存)。插件是在主行程用 `import()` 載入,等於有完整 Node/Electron 權限(自己開子行程、call HTTP 都可以)——目前只用來跑自己寫的插件,還沒做沙箱隔離。
 - 內建範例插件 `plugins/metronome`:節拍器,BPM 滑桿 + Tap Tempo,用 Web Audio API 排點擊音。
+- 內建插件 `plugins/rvc-auto-machine`:把另一個專案([`RVC-auto-machine`](../RVC-auto-machine),UVR 人聲分離 + RVC 聲線訓練/推理的 Flask 網頁介面)包成一個指令。點「開啟 RVC 自動化」會(1)先 ping `127.0.0.1:5000` 看服務是否已在跑,沒有的話用 `shell:true` 呼叫 `python ui/app.py`(cwd 設成該專案根目錄)背景啟動,輪詢等它就緒;(2)開一個面板視窗載入這個網址,已經開著的話直接把視窗帶到前面而不是重開一個。app 結束時(`before-quit`)會用 `taskkill /pid <pid> /t /f` 砍掉整個 process tree,避免 Flask 開發伺服器變成孤兒行程留在背景。這個插件的路徑是寫死的(`D:\coding\RVC-auto-machine`),因為只是個人串接自己另一個專案,不是給別人共用的插件。
+- 兩個純書籤型插件,`plugins/personal-website`(開啟個人網站 `personal-website.allencreeperqq.workers.dev`)、`plugins/github`(開啟 GitHub 個人頁 `github.com/allencreeperqq`):點指令直接 `openPanel(url)` 開一個面板視窗,已開著就把視窗帶到前面。改網址就直接改對應資料夾裡 `main.mjs` 開頭的 `URL` 常數。
 
 ### 外觀
 - 視窗用純 `transparent: true` + `backgroundColor: '#00000000'` 做真正的視窗透明(`frame: false`、`roundedCorners: true`)。這台機器上 Windows 11 的 `backgroundMaterial: 'acrylic'` 完全不會生效(不管有沒有搭配 `transparent: true` 都一樣),已改用這個確認有效的方案。

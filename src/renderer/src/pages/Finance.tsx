@@ -197,38 +197,6 @@ export default function Finance() {
         />
       </section>
 
-      <section className="accounts-section">
-        <h2>帳戶</h2>
-        <form className="account-form" onSubmit={handleAddAccount}>
-          <input
-            type="text"
-            placeholder="帳戶名稱(例如:銀行、信用卡...)"
-            value={accountName}
-            onChange={(e) => setAccountName(e.target.value)}
-          />
-          <select value={accountType} onChange={(e) => setAccountType(e.target.value)}>
-            <option value="cash">現金</option>
-            <option value="bank">銀行</option>
-            <option value="credit">信用卡</option>
-          </select>
-          <button type="submit">新增帳戶</button>
-        </form>
-        {accountMessage && <p className="settings-message">{accountMessage}</p>}
-        <ul className="account-list">
-          {accounts.map((a) => (
-            <li key={a.id}>
-              <span className="account-name">{a.name}</span>
-              <span className="account-type">
-                {a.type === 'cash' ? '現金' : a.type === 'bank' ? '銀行' : '信用卡'}
-              </span>
-              <button className="delete" onClick={() => handleDeleteAccount(a.id)}>
-                刪除
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <form className="add-tx-form" onSubmit={handleAddTransaction}>
         <select value={txType} onChange={(e) => setTxType(e.target.value as TransactionType)}>
           <option value="expense">支出</option>
@@ -351,6 +319,38 @@ export default function Finance() {
             </li>
           ))}
           {transactions.length === 0 && <li className="empty">本月尚無交易紀錄</li>}
+        </ul>
+      </section>
+
+      <section className="accounts-section">
+        <h2>支付方式</h2>
+        <form className="account-form" onSubmit={handleAddAccount}>
+          <input
+            type="text"
+            placeholder="名稱(例如:銀行、信用卡...)"
+            value={accountName}
+            onChange={(e) => setAccountName(e.target.value)}
+          />
+          <select value={accountType} onChange={(e) => setAccountType(e.target.value)}>
+            <option value="cash">現金</option>
+            <option value="bank">銀行</option>
+            <option value="credit">信用卡</option>
+          </select>
+          <button type="submit">新增支付</button>
+        </form>
+        {accountMessage && <p className="settings-message">{accountMessage}</p>}
+        <ul className="account-list">
+          {accounts.map((a) => (
+            <li key={a.id}>
+              <span className="account-name">{a.name}</span>
+              <span className="account-type">
+                {a.type === 'cash' ? '現金' : a.type === 'bank' ? '銀行' : '信用卡'}
+              </span>
+              <button className="delete" onClick={() => handleDeleteAccount(a.id)}>
+                刪除
+              </button>
+            </li>
+          ))}
         </ul>
       </section>
     </div>

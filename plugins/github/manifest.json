@@ -2,5 +2,6 @@
   "id": "github",
   "name": "GitHub",
   "version": "0.1.0",
-  "main": "main.mjs"
+  "main": "main.mjs",
+  "description": "在獨立視窗開啟你的 GitHub 個人頁面"
 }

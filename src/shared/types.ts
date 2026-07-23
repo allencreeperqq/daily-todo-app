@@ -108,9 +108,12 @@ export interface GoogleAuthStatus {
   connected: boolean
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark'
+
 export interface GeneralSettings {
   /** Base alpha for the glass background, 0.3 (very see-through) – 0.9 (near-opaque). */
   glassOpacity: number
+  themeMode: ThemeMode
   openAtLogin: boolean
   reminderLeadMinutes: number
   morningDigestHour: number
@@ -125,6 +128,7 @@ export interface PluginInfo {
   id: string
   name: string
   version: string
+  description: string
 }
 
 export interface PluginCommandInfo {

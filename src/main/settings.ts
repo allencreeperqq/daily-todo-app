@@ -37,6 +37,7 @@ export function setJsonSetting(key: string, value: unknown): void {
 
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   glassOpacity: 0.58,
+  themeMode: 'system',
   openAtLogin: false,
   reminderLeadMinutes: 10,
   morningDigestHour: 8

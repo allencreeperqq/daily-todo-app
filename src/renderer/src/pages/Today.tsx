@@ -88,7 +88,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
 }
 
 export default function Today() {
-  const [viewMode, setViewMode] = useState<ViewMode>('today')
+  const [viewMode, setViewMode] = useState<ViewMode>('month')
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
   const [tasks, setTasks] = useState<Task[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])

@@ -1,6 +1,12 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent, type MouseEvent } from 'react'
-import type { CalendarSource, GeneralSettings, GoogleAuthStatus } from '../../../shared/types'
+import type {
+  CalendarSource,
+  GeneralSettings,
+  GoogleAuthStatus,
+  ThemeMode
+} from '../../../shared/types'
 import { applyGlassOpacity } from '../glass'
+import { applyThemeMode } from '../theme'
 
 export default function Settings() {
   const [status, setStatus] = useState<GoogleAuthStatus | null>(null)
@@ -103,6 +109,14 @@ export default function Settings() {
     setGeneral(merged)
   }
 
+  async function handleThemeChange(e: ChangeEvent<HTMLSelectElement>): Promise<void> {
+    const mode = e.target.value as ThemeMode
+    applyThemeMode(mode)
+    setGeneral((g) => (g ? { ...g, themeMode: mode } : g))
+    const merged = await window.api.settings.updateGeneral({ themeMode: mode })
+    setGeneral(merged)
+  }
+
   async function handleToggleOpenAtLogin(): Promise<void> {
     if (!general) return
     const merged = await window.api.settings.updateGeneral({ openAtLogin: !general.openAtLogin })
@@ -152,110 +166,17 @@ export default function Settings() {
     <div className="settings-page">
       <h1>設定</h1>
 
-      <section className="settings-section">
-        <h2>Google 日曆</h2>
-        <p className="settings-hint">
-          到{' '}
-          <a href="#" onClick={openCredentialsConsole}>
-            Google Cloud Console
-          </a>{' '}
-          建立一個「電腦版應用程式」(Desktop app)類型的 OAuth 用戶端,啟用 Google Calendar API,
-          再把 Client ID 與 Client Secret 貼在下面。目前只做唯讀同步,不會修改你的日曆。
-        </p>
-
-        <div className="status-row">
-          <span className={`status-badge${status.configured ? ' ok' : ''}`}>
-            {status.configured ? '已設定憑證' : '尚未設定憑證'}
-          </span>
-          <span className={`status-badge${status.connected ? ' ok' : ''}`}>
-            {status.connected ? '已連接' : '未連接'}
-          </span>
-        </div>
-
-        <form className="settings-form" onSubmit={handleSaveConfig}>
-          <input
-            type="text"
-            placeholder="Client ID"
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Client Secret"
-            value={clientSecret}
-            onChange={(e) => setClientSecret(e.target.value)}
-          />
-          <button type="submit">儲存設定</button>
-        </form>
-
-        <div className="settings-actions">
-          <button disabled={!status.configured || busy} onClick={handleConnect}>
-            {status.connected ? '重新連接' : '連接 Google 日曆'}
-          </button>
-          <button disabled={!status.connected || busy} onClick={handleSync}>
-            立即同步
-          </button>
-          <button disabled={!status.connected || busy} onClick={handleDisconnect}>
-            中斷連接
-          </button>
-        </div>
-
-        {message && <p className="settings-message">{message}</p>}
-      </section>
-
-      <section className="settings-section">
-        <h2>日曆來源</h2>
-        <p className="settings-hint">
-          預設只同步「主要日曆」。如果你有其他日曆(自己建立的次要日曆,或別人分享給你、你已經接受邀請的日曆),到{' '}
-          <a href="#" onClick={openCalendarSettings}>
-            Google 日曆設定
-          </a>{' '}
-          點選該日曆 →「整合」→ 複製「日曆 ID」或「公開網址」貼在下面新增(兩種格式都吃,貼分享連結的話會自動解析出日曆 ID)。分享的日曆要先在 Google 日曆裡接受邀請、確定它出現在你的日曆清單中,才有辦法同步。
-        </p>
-
-        <form className="settings-form" onSubmit={handleAddSource}>
-          <input
-            type="text"
-            placeholder="日曆 ID(例如 xxxx@group.calendar.google.com)"
-            value={newCalendarId}
-            onChange={(e) => setNewCalendarId(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="顯示名稱(選填)"
-            value={newCalendarLabel}
-            onChange={(e) => setNewCalendarLabel(e.target.value)}
-          />
-          <button type="submit">新增</button>
-        </form>
-
-        <ul className="source-list">
-          {sources.map((src) => (
-            <li key={src.id}>
-              <span className="source-label">{src.label}</span>
-              <span className="source-id">{src.calendar_id}</span>
-              <button className="delete" onClick={() => handleRemoveSource(src.id)}>
-                移除
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="settings-section">
-        <h2>提醒通知</h2>
-        <p className="settings-hint">
-          提醒會用一個永遠置頂的小視窗跳出來(不是系統通知中心),不容易被忽略。
-        </p>
-        <div className="settings-actions">
-          <button onClick={() => window.api.notifications.test()}>測試提醒通知</button>
-        </div>
-      </section>
-
       {general && (
         <section className="settings-section">
           <h2>外觀</h2>
-          <p className="settings-hint">調整整個視窗的玻璃透明度,拖曳時會即時預覽。</p>
+          <div className="settings-field">
+            <label htmlFor="theme-mode">主題</label>
+            <select id="theme-mode" value={general.themeMode} onChange={handleThemeChange}>
+              <option value="system">跟隨系統</option>
+              <option value="light">淺色</option>
+              <option value="dark">深色</option>
+            </select>
+          </div>
           <div className="settings-field">
             <label htmlFor="glass-opacity">
               透明度({Math.round(((0.9 - general.glassOpacity) / 0.6) * 100)}% 透明)
@@ -317,6 +238,106 @@ export default function Settings() {
           {generalMessage && <p className="settings-message">{generalMessage}</p>}
         </section>
       )}
+
+      <section className="settings-section">
+        <h2>提醒通知</h2>
+        <p className="settings-hint">
+          提醒會用一個永遠置頂的小視窗跳出來(不是系統通知中心),不容易被忽略。
+        </p>
+        <div className="settings-actions">
+          <button onClick={() => window.api.notifications.test()}>測試提醒通知</button>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h2>日曆來源</h2>
+        <p className="settings-hint">
+          預設只同步「主要日曆」。如果你有其他日曆(自己建立的次要日曆,或別人分享給你、你已經接受邀請的日曆),到{' '}
+          <a href="#" onClick={openCalendarSettings}>
+            Google 日曆設定
+          </a>{' '}
+          點選該日曆 →「整合」→ 複製「日曆 ID」或「公開網址」貼在下面新增(兩種格式都吃,貼分享連結的話會自動解析出日曆 ID)。分享的日曆要先在 Google 日曆裡接受邀請、確定它出現在你的日曆清單中,才有辦法同步。
+        </p>
+
+        <form className="settings-form" onSubmit={handleAddSource}>
+          <input
+            type="text"
+            placeholder="日曆 ID(例如 xxxx@group.calendar.google.com)"
+            value={newCalendarId}
+            onChange={(e) => setNewCalendarId(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="顯示名稱(選填)"
+            value={newCalendarLabel}
+            onChange={(e) => setNewCalendarLabel(e.target.value)}
+          />
+          <button type="submit">新增</button>
+        </form>
+
+        <ul className="source-list">
+          {sources.map((src) => (
+            <li key={src.id}>
+              <span className="source-label">{src.label}</span>
+              <span className="source-id">{src.calendar_id}</span>
+              <button className="delete" onClick={() => handleRemoveSource(src.id)}>
+                移除
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-section">
+        <h2>Google 日曆</h2>
+        <p className="settings-hint">
+          到{' '}
+          <a href="#" onClick={openCredentialsConsole}>
+            Google Cloud Console
+          </a>{' '}
+          建立一個「電腦版應用程式」(Desktop app)類型的 OAuth 用戶端,啟用 Google Calendar API,
+          再把 Client ID 與 Client Secret 貼在下面。目前只做唯讀同步,不會修改你的日曆。
+        </p>
+
+        <div className="status-row">
+          <span className={`status-badge${status.configured ? ' ok' : ''}`}>
+            {status.configured ? '已設定憑證' : '尚未設定憑證'}
+          </span>
+          <span className={`status-badge${status.connected ? ' ok' : ''}`}>
+            {status.connected ? '已連接' : '未連接'}
+          </span>
+        </div>
+
+        <form className="settings-form" onSubmit={handleSaveConfig}>
+          <input
+            type="text"
+            placeholder="Client ID"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Client Secret"
+            value={clientSecret}
+            onChange={(e) => setClientSecret(e.target.value)}
+          />
+          <button type="submit">儲存設定</button>
+        </form>
+
+        <div className="settings-actions">
+          <button disabled={!status.configured || busy} onClick={handleConnect}>
+            {status.connected ? '重新連接' : '連接 Google 日曆'}
+          </button>
+          <button disabled={!status.connected || busy} onClick={handleSync}>
+            立即同步
+          </button>
+          <button disabled={!status.connected || busy} onClick={handleDisconnect}>
+            中斷連接
+          </button>
+        </div>
+
+        {message && <p className="settings-message">{message}</p>}
+      </section>
     </div>
   )
 }

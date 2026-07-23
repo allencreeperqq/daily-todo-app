@@ -57,13 +57,16 @@ function spawnServer() {
   return child
 }
 
-function killServer() {
-  if (!serverProcess) return
-  const pid = serverProcess.pid
+function killServer(onDone) {
+  const pid = serverProcess?.pid
   serverProcess = null
+  if (!pid) {
+    onDone?.()
+    return
+  }
   // spawn() was called with shell:true, so `pid` is cmd.exe's pid, not python's —
   // /t kills the whole descendant tree so the actual python.exe doesn't linger.
-  if (pid) execFile('taskkill', ['/pid', String(pid), '/t', '/f'], () => {})
+  execFile('taskkill', ['/pid', String(pid), '/t', '/f'], () => onDone?.())
 }
 
 async function ensureServerRunning() {
@@ -104,7 +107,16 @@ export function onload(app) {
     })
   })
 
-  electronApp.on('before-quit', killServer)
+  // execFile('taskkill', ...) is async — without preventDefault(), Electron can
+  // finish quitting before the kill even gets scheduled, leaving python.exe
+  // orphaned. Delay the actual quit until the tree is confirmed dead, then
+  // re-trigger it (this handler runs again, but serverProcess is already
+  // cleared by then so it's a no-op the second time through).
+  electronApp.on('before-quit', (event) => {
+    if (!serverProcess) return
+    event.preventDefault()
+    killServer(() => electronApp.quit())
+  })
 }
 
 export function onunload() {

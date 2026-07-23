@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import Today from './pages/Today'
 import Finance from './pages/Finance'
 import Settings from './pages/Settings'
 import Plugins from './pages/Plugins'
 import TitleBar from './components/TitleBar'
 import { applyGlassOpacity } from './glass'
+import { applyThemeMode } from './theme'
 
 type PageKey = 'today' | 'finance' | 'settings' | 'plugins'
 
@@ -18,8 +19,11 @@ const NAV_ITEMS: { key: PageKey; label: string; enabled: boolean }[] = [
 export default function App() {
   const [page, setPage] = useState<PageKey>('today')
 
-  useEffect(() => {
-    window.api.settings.getGeneral().then((s) => applyGlassOpacity(s.glassOpacity))
+  useLayoutEffect(() => {
+    window.api.settings.getGeneral().then((s) => {
+      applyGlassOpacity(s.glassOpacity)
+      applyThemeMode(s.themeMode)
+    })
   }, [])
 
   return (

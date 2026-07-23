@@ -2,5 +2,6 @@
   "id": "metronome",
   "name": "節拍器",
   "version": "0.1.0",
-  "main": "main.mjs"
+  "main": "main.mjs",
+  "description": "BPM 滑桿 + Tap Tempo,開一個獨立小視窗播放拍點聲"
 }

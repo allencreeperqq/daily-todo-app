@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getResolvedTheme, onThemeChange } from '../theme'
 
 // Validated categorical palette (fixed hue order — see dataviz skill).
 // Kept as resolved hex per theme rather than CSS vars so the luminance
@@ -16,15 +17,10 @@ export const SERIES_PALETTE = [
 const OTHER_COLOR = '#898781'
 
 function usePrefersDark(): boolean {
-  const [isDark, setIsDark] = useState(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches
-  )
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e: MediaQueryListEvent): void => setIsDark(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
+  // Follows the resolved theme (system preference or the user's manual
+  // override in Settings -> 外觀), not the raw OS preference directly.
+  const [isDark, setIsDark] = useState(() => getResolvedTheme() === 'dark')
+  useEffect(() => onThemeChange((theme) => setIsDark(theme === 'dark')), [])
   return isDark
 }
 

@@ -9,12 +9,14 @@ interface PluginManifest {
   name: string
   version: string
   main: string
+  description?: string
 }
 
 export interface LoadedPlugin {
   id: string
   name: string
   version: string
+  description: string
 }
 
 export interface LoadPluginsResult {
@@ -50,7 +52,12 @@ export async function loadPlugins(): Promise<LoadPluginsResult> {
       const api = createPluginApi(manifest.id, pluginDir, commands)
       await onload(api)
 
-      plugins.push({ id: manifest.id, name: manifest.name, version: manifest.version })
+      plugins.push({
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        description: manifest.description ?? ''
+      })
       console.log(`[plugins] loaded ${manifest.id} v${manifest.version}`)
     } catch (err) {
       console.error(`[plugins] failed to load plugin at ${entry.name}`, err)

@@ -25,15 +25,18 @@ export default function Plugins() {
         {data.plugins.map((plugin) => (
           <li key={plugin.id}>
             <div className="plugin-info">
-              <span className="plugin-name">{plugin.name}</span>
-              <span className="plugin-version">v{plugin.version}</span>
+              <div className="plugin-title-row">
+                <span className="plugin-name">{plugin.name}</span>
+                <span className="plugin-version">v{plugin.version}</span>
+              </div>
+              {plugin.description && <p className="plugin-description">{plugin.description}</p>}
             </div>
             <div className="plugin-commands">
               {data.commands
                 .filter((cmd) => cmd.pluginId === plugin.id)
                 .map((cmd) => (
                   <button key={cmd.id} onClick={() => window.api.plugins.run(cmd.id)}>
-                    {cmd.label}
+                    啟動
                   </button>
                 ))}
             </div>

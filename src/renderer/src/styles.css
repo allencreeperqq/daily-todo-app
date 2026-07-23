@@ -4,6 +4,10 @@
      higher than --glass-opacity so card content stays legible. */
   --glass-opacity: 0.58;
   --glass-surface-opacity: 0.66;
+
+  /* Light is the fallback shown for the instant before theme.ts resolves the
+     real theme (system preference or manual override) and stamps data-theme
+     onto <html> — see App.tsx's layout effect. */
   --bg: rgba(246, 247, 250, var(--glass-opacity));
   --surface: rgba(255, 255, 255, var(--glass-surface-opacity));
   --text: #1a1d23;
@@ -16,19 +20,17 @@
   --danger: #dc2626;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: rgba(12, 14, 19, var(--glass-opacity));
-    --surface: rgba(30, 34, 46, var(--glass-surface-opacity));
-    --text: #e8e9ec;
-    --muted: #9aa0ab;
-    --border: rgba(129, 140, 248, 0.22);
-    --accent: #818cf8;
-    --accent-2: #22d3ee;
-    --accent-glow: rgba(129, 140, 248, 0.45);
-    --accent-contrast: #14162b;
-    --danger: #f87171;
-  }
+:root[data-theme='dark'] {
+  --bg: rgba(12, 14, 19, var(--glass-opacity));
+  --surface: rgba(30, 34, 46, var(--glass-surface-opacity));
+  --text: #e8e9ec;
+  --muted: #9aa0ab;
+  --border: rgba(129, 140, 248, 0.22);
+  --accent: #818cf8;
+  --accent-2: #22d3ee;
+  --accent-glow: rgba(129, 140, 248, 0.45);
+  --accent-contrast: #14162b;
+  --danger: #f87171;
 }
 
 * {
@@ -711,7 +713,8 @@ body {
   color: var(--muted);
 }
 
-.settings-field input[type='number'] {
+.settings-field input[type='number'],
+.settings-field select {
   padding: 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -805,7 +808,13 @@ body {
 .plugin-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+
+.plugin-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .plugin-name {
@@ -814,6 +823,12 @@ body {
 
 .plugin-version {
   font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.plugin-description {
+  margin: 0;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 

@@ -1,4 +1,5 @@
 import { getDb } from './db'
+import type { GeneralSettings } from '../shared/types'
 
 export function getSetting(key: string): string | null {
   const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key) as
@@ -32,4 +33,22 @@ export function getJsonSetting<T>(key: string): T | null {
 
 export function setJsonSetting(key: string, value: unknown): void {
   setSetting(key, JSON.stringify(value))
+}
+
+const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
+  glassOpacity: 0.58,
+  openAtLogin: false,
+  reminderLeadMinutes: 10,
+  morningDigestHour: 8
+}
+
+export function getGeneralSettings(): GeneralSettings {
+  const stored = getJsonSetting<Partial<GeneralSettings>>('general')
+  return { ...DEFAULT_GENERAL_SETTINGS, ...stored }
+}
+
+export function updateGeneralSettings(patch: Partial<GeneralSettings>): GeneralSettings {
+  const merged = { ...getGeneralSettings(), ...patch }
+  setJsonSetting('general', merged)
+  return merged
 }

@@ -32,6 +32,7 @@ import {
   removeCalendarSource,
   syncGoogleCalendar
 } from './googleCalendar'
+import { getGeneralSettings, updateGeneralSettings } from './settings'
 import { loadPlugins, type LoadedPlugin } from './plugins/loader'
 import type { PluginCommand } from './plugins/api'
 import { closeAllToasts, showToast } from './toast'
@@ -132,10 +133,25 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('window:minimize', () => mainWindow?.minimize())
   ipcMain.handle('window:close', () => mainWindow?.close())
+
+  ipcMain.handle('settings:general:get', () => getGeneralSettings())
+  ipcMain.handle('settings:general:update', (_event, patch) => {
+    const merged = updateGeneralSettings(patch)
+    // Only touch the real OS login-item registration when packaged — in dev
+    // this would point Windows at the electron.exe dev binary, which isn't
+    // a useful "launch daily-todo at login" entry anyway.
+    if (patch.openAtLogin !== undefined && app.isPackaged) {
+      app.setLoginItemSettings({ openAtLogin: patch.openAtLogin })
+    }
+    return merged
+  })
 }
 
 app.whenReady().then(async () => {
   getDb()
+  if (app.isPackaged) {
+    app.setLoginItemSettings({ openAtLogin: getGeneralSettings().openAtLogin })
+  }
   registerIpcHandlers()
   createWindow()
 

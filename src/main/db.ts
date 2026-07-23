@@ -53,6 +53,7 @@ function runMigrations(database: DatabaseSync): void {
       database.exec('COMMIT')
     } catch (err) {
       database.exec('ROLLBACK')
+      console.error(`[db] migration ${file} failed:`, err)
       throw err
     }
     console.log(`[db] applied migration ${file}`)

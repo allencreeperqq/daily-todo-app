@@ -5,6 +5,7 @@ import type {
   CreateTaskInput,
   CreateTransactionInput,
   DailyTodoApi,
+  GeneralSettings,
   TaskPatch
 } from '../shared/types'
 
@@ -59,6 +60,11 @@ const api: DailyTodoApi = {
   window: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     close: () => ipcRenderer.invoke('window:close')
+  },
+  settings: {
+    getGeneral: () => ipcRenderer.invoke('settings:general:get'),
+    updateGeneral: (patch: Partial<GeneralSettings>) =>
+      ipcRenderer.invoke('settings:general:update', patch)
   }
 }
 

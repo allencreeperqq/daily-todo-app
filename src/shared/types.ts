@@ -108,6 +108,14 @@ export interface GoogleAuthStatus {
   connected: boolean
 }
 
+export interface GeneralSettings {
+  /** Base alpha for the glass background, 0.3 (very see-through) – 0.9 (near-opaque). */
+  glassOpacity: number
+  openAtLogin: boolean
+  reminderLeadMinutes: number
+  morningDigestHour: number
+}
+
 export interface SyncResult {
   count: number
   errors: { calendarId: string; message: string }[]
@@ -176,5 +184,9 @@ export interface DailyTodoApi {
   window: {
     minimize(): Promise<void>
     close(): Promise<void>
+  }
+  settings: {
+    getGeneral(): Promise<GeneralSettings>
+    updateGeneral(patch: Partial<GeneralSettings>): Promise<GeneralSettings>
   }
 }

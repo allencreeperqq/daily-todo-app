@@ -82,6 +82,19 @@ body {
   padding-left: 14px;
 }
 
+.titlebar-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
 .titlebar-title {
   font-size: 0.78rem;
   font-weight: 600;

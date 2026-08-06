@@ -128,18 +128,19 @@ export default function Today() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range.from.getTime(), range.to.getTime()])
 
+  async function createTask(taskTitle: string, dueAtIso: string | null): Promise<void> {
+    await window.api.tasks.create({ title: taskTitle, due_at: dueAtIso })
+    await refresh()
+  }
+
   async function handleAdd(e: FormEvent): Promise<void> {
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
 
-    await window.api.tasks.create({
-      title: trimmed,
-      due_at: dueAt ? new Date(dueAt).toISOString() : null
-    })
+    await createTask(trimmed, dueAt ? new Date(dueAt).toISOString() : null)
     setTitle('')
     setDueAt('')
-    await refresh()
   }
 
   async function handleToggle(task: Task): Promise<void> {
@@ -345,7 +346,13 @@ export default function Today() {
         />
       )}
       {viewMode === 'day' && (
-        <DayAgenda day={anchor} tasks={tasks} events={events} onHideEvent={handleHideEvent} />
+        <DayAgenda
+          day={anchor}
+          tasks={tasks}
+          events={events}
+          onHideEvent={handleHideEvent}
+          onAddTask={createTask}
+        />
       )}
     </div>
   )
@@ -468,17 +475,47 @@ function DayAgenda({
   day,
   tasks,
   events,
-  onHideEvent
+  onHideEvent,
+  onAddTask
 }: {
   day: Date
   tasks: Task[]
   events: CalendarEvent[]
   onHideEvent: (id: number) => void
+  onAddTask: (title: string, dueAtIso: string | null) => Promise<void>
 }) {
   const items = buildAgenda(day, tasks, events)
+  const [newTitle, setNewTitle] = useState('')
+  const [newTime, setNewTime] = useState('')
+
+  async function handleSubmit(e: FormEvent): Promise<void> {
+    e.preventDefault()
+    const trimmed = newTitle.trim()
+    if (!trimmed) return
+    const dueAt = new Date(`${dateKey(day)}T${newTime || '09:00'}`).toISOString()
+    await onAddTask(trimmed, dueAt)
+    setNewTitle('')
+    setNewTime('')
+  }
 
   return (
     <div className="day-agenda">
+      <form className="add-task-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="新增這天的待辦事項..."
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+        />
+        <input
+          type="time"
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          aria-label="時間(選填,預設早上 9 點)"
+        />
+        <button type="submit">新增</button>
+      </form>
+
       {items.length === 0 && <p className="empty">這天沒有行程或待辦事項</p>}
       <ul className="day-agenda-list">
         {items.map((item) => (

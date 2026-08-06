@@ -1,0 +1,7 @@
+{
+  "id": "personal-website",
+  "name": "個人網站",
+  "version": "0.1.0",
+  "main": "main.mjs",
+  "description": "在獨立視窗開啟你的個人網站"
+}

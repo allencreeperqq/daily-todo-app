@@ -42,6 +42,7 @@ function isSameDay(a: Date, b: Date): boolean {
 
 interface AgendaItem {
   key: string
+  id: number
   timeLabel: string | null
   title: string
   kind: 'task' | 'event'
@@ -58,6 +59,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
     const due = new Date(task.due_at)
     items.push({
       key: `task-${task.id}`,
+      id: task.id,
       timeLabel: due.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
       title: task.title,
       kind: 'task',
@@ -71,6 +73,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
     const start = new Date(event.start_at)
     items.push({
       key: `event-${event.id}`,
+      id: event.id,
       timeLabel: event.all_day
         ? '整天'
         : start.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
@@ -85,7 +88,7 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
 }
 
 export default function Today() {
-  const [viewMode, setViewMode] = useState<ViewMode>('today')
+  const [viewMode, setViewMode] = useState<ViewMode>('month')
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
   const [tasks, setTasks] = useState<Task[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -125,18 +128,19 @@ export default function Today() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range.from.getTime(), range.to.getTime()])
 
+  async function createTask(taskTitle: string, dueAtIso: string | null): Promise<void> {
+    await window.api.tasks.create({ title: taskTitle, due_at: dueAtIso })
+    await refresh()
+  }
+
   async function handleAdd(e: FormEvent): Promise<void> {
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
 
-    await window.api.tasks.create({
-      title: trimmed,
-      due_at: dueAt ? new Date(dueAt).toISOString() : null
-    })
+    await createTask(trimmed, dueAt ? new Date(dueAt).toISOString() : null)
     setTitle('')
     setDueAt('')
-    await refresh()
   }
 
   async function handleToggle(task: Task): Promise<void> {
@@ -146,6 +150,11 @@ export default function Today() {
 
   async function handleDelete(id: number): Promise<void> {
     await window.api.tasks.delete(id)
+    await refresh()
+  }
+
+  async function handleHideEvent(id: number): Promise<void> {
+    await window.api.calendar.hideEvent(id)
     await refresh()
   }
 
@@ -257,6 +266,13 @@ export default function Today() {
                   </span>
                   <span className="event-title">{ev.title}</span>
                   {ev.location && <span className="event-location">{ev.location}</span>}
+                  <button
+                    className="delete"
+                    onClick={() => handleHideEvent(ev.id)}
+                    aria-label="刪除"
+                  >
+                    刪除
+                  </button>
                 </li>
               ))}
               {eventsToday.length === 0 && <li className="empty">今天沒有 Google 日曆行程</li>}
@@ -320,9 +336,24 @@ export default function Today() {
         <MonthGrid anchor={anchor} tasks={tasks} events={events} today={todayDate} onSelectDay={goToDay} />
       )}
       {viewMode === 'week' && (
-        <WeekAgenda anchor={anchor} tasks={tasks} events={events} today={todayDate} onSelectDay={goToDay} />
+        <WeekAgenda
+          anchor={anchor}
+          tasks={tasks}
+          events={events}
+          today={todayDate}
+          onSelectDay={goToDay}
+          onHideEvent={handleHideEvent}
+        />
       )}
-      {viewMode === 'day' && <DayAgenda day={anchor} tasks={tasks} events={events} />}
+      {viewMode === 'day' && (
+        <DayAgenda
+          day={anchor}
+          tasks={tasks}
+          events={events}
+          onHideEvent={handleHideEvent}
+          onAddTask={createTask}
+        />
+      )}
     </div>
   )
 }
@@ -388,13 +419,15 @@ function WeekAgenda({
   tasks,
   events,
   today,
-  onSelectDay
+  onSelectDay,
+  onHideEvent
 }: {
   anchor: Date
   tasks: Task[]
   events: CalendarEvent[]
   today: Date
   onSelectDay: (d: Date) => void
+  onHideEvent: (id: number) => void
 }) {
   const from = startOfWeek(anchor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
@@ -419,6 +452,15 @@ function WeekAgenda({
                 >
                   {item.timeLabel && <span className="agenda-time">{item.timeLabel}</span>}
                   <span className="agenda-title">{item.title}</span>
+                  {item.kind === 'event' && (
+                    <button
+                      className="delete"
+                      onClick={() => onHideEvent(item.id)}
+                      aria-label="刪除"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -432,16 +474,48 @@ function WeekAgenda({
 function DayAgenda({
   day,
   tasks,
-  events
+  events,
+  onHideEvent,
+  onAddTask
 }: {
   day: Date
   tasks: Task[]
   events: CalendarEvent[]
+  onHideEvent: (id: number) => void
+  onAddTask: (title: string, dueAtIso: string | null) => Promise<void>
 }) {
   const items = buildAgenda(day, tasks, events)
+  const [newTitle, setNewTitle] = useState('')
+  const [newTime, setNewTime] = useState('')
+
+  async function handleSubmit(e: FormEvent): Promise<void> {
+    e.preventDefault()
+    const trimmed = newTitle.trim()
+    if (!trimmed) return
+    const dueAt = new Date(`${dateKey(day)}T${newTime || '09:00'}`).toISOString()
+    await onAddTask(trimmed, dueAt)
+    setNewTitle('')
+    setNewTime('')
+  }
 
   return (
     <div className="day-agenda">
+      <form className="add-task-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="新增這天的待辦事項..."
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+        />
+        <input
+          type="time"
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          aria-label="時間(選填,預設早上 9 點)"
+        />
+        <button type="submit">新增</button>
+      </form>
+
       {items.length === 0 && <p className="empty">這天沒有行程或待辦事項</p>}
       <ul className="day-agenda-list">
         {items.map((item) => (
@@ -449,6 +523,11 @@ function DayAgenda({
             <span className="agenda-time">{item.timeLabel ?? '整天'}</span>
             <span className="agenda-title">{item.title}</span>
             <span className="agenda-kind">{item.kind === 'task' ? '待辦' : 'Google 日曆'}</span>
+            {item.kind === 'event' && (
+              <button className="delete" onClick={() => onHideEvent(item.id)} aria-label="刪除">
+                刪除
+              </button>
+            )}
           </li>
         ))}
       </ul>

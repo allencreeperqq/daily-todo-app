@@ -1,12 +1,11 @@
 import { listTasks } from './tasks'
 import { isGoogleConnected } from './googleAuth'
 import { listEvents, syncGoogleCalendar } from './googleCalendar'
+import { getGeneralSettings } from './settings'
 import { showToast } from './toast'
 
 const CHECK_INTERVAL_MS = 60_000
 const CALENDAR_SYNC_INTERVAL_MS = 15 * 60_000
-const REMINDER_WINDOW_MINUTES = 10
-const MORNING_DIGEST_HOUR = 8
 
 const notifiedTaskIds = new Set<number>()
 const notifiedEventIds = new Set<number>()
@@ -37,10 +36,11 @@ function checkReminders(): void {
 }
 
 function checkTaskReminders(now: Date): void {
+  const { reminderLeadMinutes } = getGeneralSettings()
   const dueSoon = listTasks().filter((task) => {
     if (task.completed_at || !task.due_at || notifiedTaskIds.has(task.id)) return false
     const minutesUntilDue = (new Date(task.due_at).getTime() - now.getTime()) / 60_000
-    return minutesUntilDue <= REMINDER_WINDOW_MINUTES && minutesUntilDue > -1
+    return minutesUntilDue <= reminderLeadMinutes && minutesUntilDue > -1
   })
 
   for (const task of dueSoon) {
@@ -54,8 +54,9 @@ function checkTaskReminders(now: Date): void {
 }
 
 function checkEventReminders(now: Date): void {
+  const { reminderLeadMinutes } = getGeneralSettings()
   const from = now.toISOString()
-  const to = new Date(now.getTime() + (REMINDER_WINDOW_MINUTES + 1) * 60_000).toISOString()
+  const to = new Date(now.getTime() + (reminderLeadMinutes + 1) * 60_000).toISOString()
 
   const dueSoon = listEvents(from, to).filter(
     (event) => !event.all_day && !notifiedEventIds.has(event.id)
@@ -72,8 +73,9 @@ function checkEventReminders(now: Date): void {
 }
 
 function maybeSendMorningDigest(now: Date): void {
+  const { morningDigestHour } = getGeneralSettings()
   const todayKey = now.toISOString().slice(0, 10)
-  if (now.getHours() !== MORNING_DIGEST_HOUR || morningDigestSentOn === todayKey) return
+  if (now.getHours() !== morningDigestHour || morningDigestSentOn === todayKey) return
 
   const todosToday = listTasks().filter(
     (task) => !task.completed_at && task.due_at?.slice(0, 10) === todayKey

@@ -84,6 +84,7 @@ export interface MonthlySummary {
 
 export interface CalendarEvent {
   id: number
+  calendar_id: string
   google_event_id: string | null
   title: string
   location: string | null
@@ -91,7 +92,15 @@ export interface CalendarEvent {
   end_at: string | null
   all_day: boolean
   source: string
+  hidden: boolean
   synced_at: string
+}
+
+export interface CalendarSource {
+  id: number
+  calendar_id: string
+  label: string
+  created_at: string
 }
 
 export interface GoogleAuthStatus {
@@ -99,14 +108,27 @@ export interface GoogleAuthStatus {
   connected: boolean
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark'
+
+export interface GeneralSettings {
+  /** Base alpha for the glass background, 0.3 (very see-through) – 0.9 (near-opaque). */
+  glassOpacity: number
+  themeMode: ThemeMode
+  openAtLogin: boolean
+  reminderLeadMinutes: number
+  morningDigestHour: number
+}
+
 export interface SyncResult {
   count: number
+  errors: { calendarId: string; message: string }[]
 }
 
 export interface PluginInfo {
   id: string
   name: string
   version: string
+  description: string
 }
 
 export interface PluginCommandInfo {
@@ -131,6 +153,7 @@ export interface DailyTodoApi {
   finance: {
     listAccounts(): Promise<Account[]>
     createAccount(input: CreateAccountInput): Promise<Account>
+    deleteAccount(id: number): Promise<{ ok: boolean; message?: string }>
     listTransactions(month?: string): Promise<Transaction[]>
     createTransaction(input: CreateTransactionInput): Promise<Transaction>
     deleteTransaction(id: number): Promise<void>
@@ -147,6 +170,10 @@ export interface DailyTodoApi {
     disconnectGoogle(): Promise<void>
     syncGoogle(): Promise<SyncResult>
     listEvents(fromIso: string, toIso: string): Promise<CalendarEvent[]>
+    hideEvent(id: number): Promise<void>
+    listSources(): Promise<CalendarSource[]>
+    addSource(calendarId: string, label: string): Promise<CalendarSource>
+    removeSource(id: number): Promise<void>
   }
   shell: {
     openExternal(url: string): Promise<void>
@@ -161,5 +188,9 @@ export interface DailyTodoApi {
   window: {
     minimize(): Promise<void>
     close(): Promise<void>
+  }
+  settings: {
+    getGeneral(): Promise<GeneralSettings>
+    updateGeneral(patch: Partial<GeneralSettings>): Promise<GeneralSettings>
   }
 }

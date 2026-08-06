@@ -1,0 +1,7 @@
+{
+  "id": "rvc-auto-machine",
+  "name": "RVC 自動化",
+  "version": "0.1.0",
+  "main": "main.mjs",
+  "description": "啟動並開啟 RVC 聲線訓練/推理管線的網頁介面"
+}

@@ -19,7 +19,8 @@ export interface PanelOptions {
 export interface PluginApi {
   registerCommand(id: string, label: string, handler: () => void): void
   showNotification(text: string): void
-  openPanel(htmlRelativePath: string, options?: PanelOptions): void
+  /** Pass a bundled HTML file relative to the plugin's own folder, or a full http(s) URL. */
+  openPanel(htmlRelativePathOrUrl: string, options?: PanelOptions): BrowserWindow
   storage: {
     get<T>(key: string, defaultValue?: T): T | undefined
     set(key: string, value: unknown): void
@@ -41,7 +42,7 @@ export function createPluginApi(
     showNotification(text) {
       new Notification({ title: pluginId, body: text }).show()
     },
-    openPanel(htmlRelativePath, options = {}) {
+    openPanel(htmlRelativePathOrUrl, options = {}) {
       const panel = new BrowserWindow({
         width: options.width ?? 320,
         height: options.height ?? 400,
@@ -50,7 +51,12 @@ export function createPluginApi(
         autoHideMenuBar: true,
         webPreferences: { sandbox: true }
       })
-      panel.loadFile(join(pluginDir, htmlRelativePath))
+      if (/^https?:\/\//.test(htmlRelativePathOrUrl)) {
+        panel.loadURL(htmlRelativePathOrUrl)
+      } else {
+        panel.loadFile(join(pluginDir, htmlRelativePathOrUrl))
+      }
+      return panel
     },
     storage: {
       get<T>(key: string, defaultValue?: T) {

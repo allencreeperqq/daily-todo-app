@@ -5,33 +5,50 @@
 ## 功能
 
 ### 今天 / 日曆(同一頁,右上角切換檢視)
-- **今天**檢視:新增待辦(可設到期時間)、勾選完成、刪除,並列出今天的 Google 日曆行程。
-- **月 / 週 / 日**檢視:傳統日曆格線,合併顯示待辦與 Google 日曆行程。月檢視點某一天可直接跳到那天的日檢視。
+- 預設打開是**月**檢視,一進來就看到整個月的行事曆。
+- **今天**檢視:新增待辦(可設到期時間)、勾選完成、刪除,並列出今天的 Google 日曆行程(可個別刪除)。
+- **月 / 週 / 日**檢視:傳統日曆格線,合併顯示待辦與 Google 日曆行程。月檢視點某一天可直接跳到那天的日檢視。日曆行程(含整天行程)都可以在週/日檢視個別刪除。
+- **日檢視也能新增待辦**:不是只有「今天」分頁能新增,日檢視上方有一個小表單(標題 + 選填時間,預設早上 9 點),新增的待辦會掛在正在看的那一天,不限今天。這只是本地 `tasks` 表的資料,跟 Google 日曆完全無關——Google 那邊還是唯讀同步,刪除 Google 行程也還是只在本機標記隱藏(`hidden` 欄位),兩者都不會反過來動到 Google 日曆本身的資料。
 
 ### 記帳
-- 交易 CRUD(收入/支出、分類、備註、日期、帳戶),月份可左右切換。
+- 交易 CRUD(收入/支出、分類、備註、日期、支付方式),月份可左右切換。
 - 分類支出用甜甜圈圖呈現(固定色階、通過色盲安全驗證),中間顯示本月總支出。
 - 近半年收入/支出趨勢長條圖。
 - 預算設定:每個分類可設每月上限,超支時進度條變紅。
+- 「支付方式」管理(現金/銀行/信用卡,可自訂新增/刪除)放在頁面最下方「新增支付」區塊——不是核心操作,不用擋在交易明細前面。
 
 ### Google 日曆整合(唯讀同步)
 - OAuth2(桌面應用程式的 loopback redirect 流程),需要你自己在 [Google Cloud Console](https://console.cloud.google.com/apis/credentials) 建立憑證(見下方「設定 Google 日曆」)。
 - 背景每 15 分鐘自動同步一次,同步範圍是「前 90 天到後 365 天」,涵蓋多個月份的日曆瀏覽。
-- 手動同步按鈕在「設定」頁。
+- 預設只同步「主要日曆」,可以在「設定」頁貼其他日曆的 ID 加入同步(自己的次要日曆,或別人分享、你已接受邀請的日曆)。
+- 手動同步按鈕在「設定」頁,同步失敗的日曆(例如 ID 打錯)會列出個別錯誤訊息,不會擋住其他日曆正常同步。
+- 刪除某筆日曆行程只是**在這個 app 裡不再顯示**(因為只有唯讀權限,無法真的從 Google 刪除),下次同步也不會讓它重新出現。
 
 ### 提醒通知
-- 待辦到期前 10 分鐘、Google 行程開始前 10 分鐘,會跳出一個**永遠置頂**的小視窗提醒(不是系統通知中心,不會被 Windows 的勿擾模式擋掉)。
-- 每天早上 8 點發一則今日總覽(幾個行程、幾件待辦)。
+- 待辦到期前、Google 行程開始前,會跳出一個**永遠置頂**的小視窗提醒(不是系統通知中心,不會被 Windows 的勿擾模式擋掉)。提前幾分鐘可在「設定 → 一般」調整(預設 10 分鐘)。
+- 每天固定時間發一則今日總覽(幾個行程、幾件待辦),時間可在「設定 → 一般」調整(預設早上 8 點)。
 - 「設定」頁有「測試提醒通知」按鈕可以隨時預覽。
 
 ### 插件系統
-- 把插件資料夾放進專案根目錄的 `plugins/` 即可載入,格式仿 Obsidian:`manifest.json`(id/name/version/main)+ 進入點模組(`export function onload(app) {...}`)。
-- 插件可用的 API:`app.registerCommand()`(出現在系統匣選單與「插件」頁)、`app.showNotification()`、`app.openPanel()`(開一個獨立小視窗)、`app.storage`(插件專屬的 key-value 儲存)。
+- 把插件資料夾放進專案根目錄的 `plugins/` 即可載入,格式仿 Obsidian:`manifest.json`(id/name/version/main/**description**)+ 進入點模組(`export function onload(app) {...}`)。「插件」頁的每張卡片會顯示 `description` 這行簡短說明,按鈕一律顯示「啟動」(不管底層指令的實際 label 是什麼)。
+- 插件可用的 API:`app.registerCommand()`(出現在系統匣選單與「插件」頁)、`app.showNotification()`、`app.openPanel(htmlOrUrl, options)`(開一個獨立小視窗,傳本地 HTML 相對路徑或 `http(s)://` 網址都可以,回傳該 `BrowserWindow`)、`app.storage`(插件專屬的 key-value 儲存)。插件是在主行程用 `import()` 載入,等於有完整 Node/Electron 權限(自己開子行程、call HTTP 都可以)——目前只用來跑自己寫的插件,還沒做沙箱隔離。
 - 內建範例插件 `plugins/metronome`:節拍器,BPM 滑桿 + Tap Tempo,用 Web Audio API 排點擊音。
+- 內建插件 `plugins/rvc-auto-machine`:把另一個專案([`RVC-auto-machine`](../RVC-auto-machine),UVR 人聲分離 + RVC 聲線訓練/推理的 Flask 網頁介面)包成一個指令。點「啟動」會(1)先 ping `127.0.0.1:5000` 看服務是否已在跑,沒有的話用 `shell:true` 呼叫 `python ui/app.py`(cwd 設成該專案根目錄)背景啟動,輪詢等它就緒;(2)開一個面板視窗載入這個網址,已經開著的話直接把視窗帶到前面而不是重開一個。這個插件的路徑是寫死的(`D:\coding\RVC-auto-machine`),因為只是個人串接自己另一個專案,不是給別人共用的插件。
+  - **quit 時清掉背景行程**:app 結束時(`before-quit`)要用 `taskkill /pid <pid> /t /f` 砍掉整個 process tree,避免 Flask 開發伺服器變成孤兒行程。第一版直接在 `before-quit` 裡呼叫 `execFile`(非同步)但沒擋著 quit 流程,實測發現 Electron 可能在 taskkill 真的執行前就已經結束行程,導致 python.exe 孤兒程序殘留。修正方式是 `event.preventDefault()` 擋住這次 quit,等 `taskkill` 的 callback 真的觸發後才呼叫 `app.quit()` 繼續(這個 handler 會因此被呼叫兩次,但第二次 `serverProcess` 已經是 `null` 所以直接放行,不會卡死或無限迴圈)。
+- 兩個純書籤型插件,`plugins/personal-website`(開啟個人網站 `personal-website.allencreeperqq.workers.dev`)、`plugins/github`(開啟 GitHub 個人頁 `github.com/allencreeperqq`):點指令直接 `openPanel(url)` 開一個面板視窗,已開著就把視窗帶到前面。改網址就直接改對應資料夾裡 `main.mjs` 開頭的 `URL` 常數。
 
 ### 外觀
-- Windows 11 原生 acrylic 毛玻璃背景(`backgroundMaterial` + 真透明視窗),介面採半透明玻璃卡片風格,自訂無邊框標題列(可拖曳、最小化/關閉按鈕)。
-- 深色 / 淺色模式自動跟隨系統。
+- 視窗用純 `transparent: true` + `backgroundColor: '#00000000'` 做真正的視窗透明(`frame: false`、`roundedCorners: true`)。這台機器上 Windows 11 的 `backgroundMaterial: 'acrylic'` 完全不會生效(不管有沒有搭配 `transparent: true` 都一樣),已改用這個確認有效的方案。
+- 介面卡片本身用 CSS `backdrop-filter: blur()` 做毛玻璃模糊,實際的透明/不透明程度由「設定 → 外觀」的滑桿即時調整(拖曳時會即時預覽,放開才寫入),存在 `settings` 表裡,重開 app 也會記得。
+- 深色 / 淺色主題預設「跟隨系統」,也可以在「設定 → 外觀」手動切成固定淺色或深色(不想跟著系統變)。實作上是 `theme.ts` 把解析後的主題寫到 `<html data-theme="light|dark">`,CSS 用 `:root[data-theme='dark']` 覆蓋顏色變數(不再只靠 `prefers-color-scheme` media query),選「跟隨系統」時才會額外掛一個系統主題變化的監聽器即時反應。記帳頁的甜甜圈圖顏色也是跟著這個解析後的主題走,不是直接讀系統設定,不然手動切换主題時圖表顏色會跟介面對不上。
+- 若整個視窗看起來完全不透明,檢查 Windows 設定裡「透明效果」有沒有開啟(設定 > 個人化 > 色彩),以及「省電模式」是否關閉(開啟省電模式時 Windows 11 會停用毛玻璃效果)。
+- App 圖示只有一個來源檔案要換:換掉 `resources/icon.png`(視窗/工作列圖示用)後,重新產生 `resources/icon-16/32/48.png`(系統匣用)與 `resources/icon.ico`(桌面捷徑用)。因為視窗是 `frame: false` 自訂標題列,Windows 不會自動畫出原生標題列圖示,所以標題列左上角那個圖示是另外把 `resources/icon.png` 複製一份到 `src/renderer/src/assets/app-icon.png`、在 `TitleBar.tsx` 裡用 `<img>` 疊上去的——換圖示記得這份也要跟著複製更新,兩邊目前沒有自動同步。
+
+### 一般設定
+- 「設定 → 一般」可開關「開機時自動啟動」(`app.setLoginItemSettings`)。這個開關只在**打包安裝後的版本**才會真的註冊到 Windows 開機項目;開發模式(`npm run dev`/跑 `out/` 未打包版本)下只會保存這個選項的值,不會動到系統設定,避免把開機項目指向開發用的執行檔路徑。
+
+### 設定頁的排版順序
+由上到下刻意排成:**外觀 → 一般 → 提醒通知 → 日曆來源 → Google 日曆**。前面是整體使用體驗(透明度、主題、開機啟動、提醒時間),越常用越往上放;Google 帳密輸入(Client ID/Secret)最不常改、也最敏感,放在最下面。
 
 ## 開發
 

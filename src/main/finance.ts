@@ -26,6 +26,15 @@ export function createAccount(input: CreateAccountInput): Account {
     .get(result.lastInsertRowid) as unknown as Account
 }
 
+export function deleteAccount(id: number): { ok: boolean; message?: string } {
+  try {
+    getDb().prepare('DELETE FROM accounts WHERE id = ?').run(id)
+    return { ok: true }
+  } catch {
+    return { ok: false, message: '這個帳戶還有交易紀錄,無法刪除' }
+  }
+}
+
 export function listTransactions(month?: string): Transaction[] {
   const targetMonth = month ?? currentMonth()
   return getDb()

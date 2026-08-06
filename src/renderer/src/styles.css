@@ -1,6 +1,15 @@
 :root {
-  --bg: rgba(246, 247, 250, 0.72);
-  --surface: rgba(255, 255, 255, 0.68);
+  /* Overridden at runtime from the user's "外觀" setting (see App.tsx); these
+     are just the pre-load defaults. --glass-surface-opacity is kept a bit
+     higher than --glass-opacity so card content stays legible. */
+  --glass-opacity: 0.58;
+  --glass-surface-opacity: 0.66;
+
+  /* Light is the fallback shown for the instant before theme.ts resolves the
+     real theme (system preference or manual override) and stamps data-theme
+     onto <html> — see App.tsx's layout effect. */
+  --bg: rgba(246, 247, 250, var(--glass-opacity));
+  --surface: rgba(255, 255, 255, var(--glass-surface-opacity));
   --text: #1a1d23;
   --muted: #6b7280;
   --border: rgba(79, 70, 229, 0.16);
@@ -11,19 +20,17 @@
   --danger: #dc2626;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: rgba(12, 14, 19, 0.62);
-    --surface: rgba(30, 34, 46, 0.58);
-    --text: #e8e9ec;
-    --muted: #9aa0ab;
-    --border: rgba(129, 140, 248, 0.22);
-    --accent: #818cf8;
-    --accent-2: #22d3ee;
-    --accent-glow: rgba(129, 140, 248, 0.45);
-    --accent-contrast: #14162b;
-    --danger: #f87171;
-  }
+:root[data-theme='dark'] {
+  --bg: rgba(12, 14, 19, var(--glass-opacity));
+  --surface: rgba(30, 34, 46, var(--glass-surface-opacity));
+  --text: #e8e9ec;
+  --muted: #9aa0ab;
+  --border: rgba(129, 140, 248, 0.22);
+  --accent: #818cf8;
+  --accent-2: #22d3ee;
+  --accent-glow: rgba(129, 140, 248, 0.45);
+  --accent-contrast: #14162b;
+  --danger: #f87171;
 }
 
 * {
@@ -73,6 +80,19 @@ body {
   justify-content: space-between;
   -webkit-app-region: drag;
   padding-left: 14px;
+}
+
+.titlebar-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
 }
 
 .titlebar-title {
@@ -176,6 +196,7 @@ body {
 .budget-form button,
 .settings-form button,
 .plugin-commands button,
+.account-form button,
 .view-switch button.active {
   box-shadow: 0 0 0 1px var(--accent-glow), 0 0 16px var(--accent-glow);
 }
@@ -441,6 +462,72 @@ body {
   flex: 1;
 }
 
+.accounts-section {
+  margin-bottom: 28px;
+}
+
+.account-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.account-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.account-form select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.account-form button {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.account-name {
+  font-weight: 600;
+}
+
+.account-type {
+  color: var(--muted);
+}
+
 .tx-list {
   list-style: none;
   margin: 0;
@@ -626,6 +713,81 @@ body {
   color: var(--muted);
 }
 
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-width: 360px;
+}
+
+.settings-field label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.settings-field input[type='number'],
+.settings-field select {
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.settings-field input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+
+.settings-checkbox input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.source-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.source-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.source-id {
+  flex: 1;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Plugins page */
 
 .plugins-page code {
@@ -659,7 +821,13 @@ body {
 .plugin-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+
+.plugin-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .plugin-name {
@@ -668,6 +836,12 @@ body {
 
 .plugin-version {
   font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.plugin-description {
+  margin: 0;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 

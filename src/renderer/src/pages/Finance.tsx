@@ -50,6 +50,10 @@ export default function Finance() {
   const [budgetCategory, setBudgetCategory] = useState('')
   const [budgetLimit, setBudgetLimit] = useState('')
 
+  const [accountName, setAccountName] = useState('')
+  const [accountType, setAccountType] = useState('cash')
+  const [accountMessage, setAccountMessage] = useState<string | null>(null)
+
   async function refresh(): Promise<void> {
     const [accountList, txList, budgetList, monthlySummary, trendData] = await Promise.all([
       window.api.finance.listAccounts(),
@@ -129,6 +133,25 @@ export default function Finance() {
 
   async function handleDeleteBudget(id: number): Promise<void> {
     await window.api.finance.deleteBudget(id)
+    await refresh()
+  }
+
+  async function handleAddAccount(e: FormEvent): Promise<void> {
+    e.preventDefault()
+    if (!accountName.trim()) return
+    await window.api.finance.createAccount({ name: accountName.trim(), type: accountType })
+    setAccountName('')
+    setAccountMessage(null)
+    await refresh()
+  }
+
+  async function handleDeleteAccount(id: number): Promise<void> {
+    const result = await window.api.finance.deleteAccount(id)
+    if (!result.ok) {
+      setAccountMessage(result.message ?? '刪除失敗')
+      return
+    }
+    setAccountMessage(null)
     await refresh()
   }
 
@@ -296,6 +319,38 @@ export default function Finance() {
             </li>
           ))}
           {transactions.length === 0 && <li className="empty">本月尚無交易紀錄</li>}
+        </ul>
+      </section>
+
+      <section className="accounts-section">
+        <h2>支付方式</h2>
+        <form className="account-form" onSubmit={handleAddAccount}>
+          <input
+            type="text"
+            placeholder="名稱(例如:銀行、信用卡...)"
+            value={accountName}
+            onChange={(e) => setAccountName(e.target.value)}
+          />
+          <select value={accountType} onChange={(e) => setAccountType(e.target.value)}>
+            <option value="cash">現金</option>
+            <option value="bank">銀行</option>
+            <option value="credit">信用卡</option>
+          </select>
+          <button type="submit">新增支付</button>
+        </form>
+        {accountMessage && <p className="settings-message">{accountMessage}</p>}
+        <ul className="account-list">
+          {accounts.map((a) => (
+            <li key={a.id}>
+              <span className="account-name">{a.name}</span>
+              <span className="account-type">
+                {a.type === 'cash' ? '現金' : a.type === 'bank' ? '銀行' : '信用卡'}
+              </span>
+              <button className="delete" onClick={() => handleDeleteAccount(a.id)}>
+                刪除
+              </button>
+            </li>
+          ))}
         </ul>
       </section>
     </div>

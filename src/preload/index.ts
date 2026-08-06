@@ -5,6 +5,7 @@ import type {
   CreateTaskInput,
   CreateTransactionInput,
   DailyTodoApi,
+  GeneralSettings,
   TaskPatch
 } from '../shared/types'
 
@@ -20,6 +21,7 @@ const api: DailyTodoApi = {
     listAccounts: () => ipcRenderer.invoke('finance:accounts:list'),
     createAccount: (input: CreateAccountInput) =>
       ipcRenderer.invoke('finance:accounts:create', input),
+    deleteAccount: (id: number) => ipcRenderer.invoke('finance:accounts:delete', id),
     listTransactions: (month?: string) => ipcRenderer.invoke('finance:transactions:list', month),
     createTransaction: (input: CreateTransactionInput) =>
       ipcRenderer.invoke('finance:transactions:create', input),
@@ -38,7 +40,12 @@ const api: DailyTodoApi = {
     disconnectGoogle: () => ipcRenderer.invoke('calendar:google:disconnect'),
     syncGoogle: () => ipcRenderer.invoke('calendar:google:sync'),
     listEvents: (fromIso: string, toIso: string) =>
-      ipcRenderer.invoke('calendar:events:list', fromIso, toIso)
+      ipcRenderer.invoke('calendar:events:list', fromIso, toIso),
+    hideEvent: (id: number) => ipcRenderer.invoke('calendar:events:hide', id),
+    listSources: () => ipcRenderer.invoke('calendar:sources:list'),
+    addSource: (calendarId: string, label: string) =>
+      ipcRenderer.invoke('calendar:sources:add', calendarId, label),
+    removeSource: (id: number) => ipcRenderer.invoke('calendar:sources:remove', id)
   },
   shell: {
     openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url)
@@ -53,6 +60,11 @@ const api: DailyTodoApi = {
   window: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     close: () => ipcRenderer.invoke('window:close')
+  },
+  settings: {
+    getGeneral: () => ipcRenderer.invoke('settings:general:get'),
+    updateGeneral: (patch: Partial<GeneralSettings>) =>
+      ipcRenderer.invoke('settings:general:update', patch)
   }
 }
 

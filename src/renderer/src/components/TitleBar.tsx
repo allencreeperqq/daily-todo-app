@@ -1,7 +1,10 @@
+import appIcon from '../assets/app-icon.png'
+
 export default function TitleBar() {
   return (
     <div className="titlebar">
       <div className="titlebar-drag">
+        <img className="titlebar-icon" src={appIcon} alt="" />
         <span className="titlebar-title">Daily Todo</span>
       </div>
       <div className="titlebar-buttons">

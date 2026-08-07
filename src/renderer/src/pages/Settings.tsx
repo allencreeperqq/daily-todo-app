@@ -150,6 +150,26 @@ export default function Settings() {
     setGeneral(merged)
   }
 
+  async function handleToggleExpenseReminder(): Promise<void> {
+    if (!general) return
+    const merged = await window.api.settings.updateGeneral({
+      expenseReminderEnabled: !general.expenseReminderEnabled
+    })
+    setGeneral(merged)
+  }
+
+  function handleExpenseReminderHourInput(e: ChangeEvent<HTMLInputElement>): void {
+    const value = Number(e.target.value)
+    setGeneral((g) => (g ? { ...g, expenseReminderHour: value } : g))
+  }
+
+  async function commitExpenseReminderHour(): Promise<void> {
+    if (!general) return
+    const clamped = Math.min(23, Math.max(0, Math.round(general.expenseReminderHour) || 0))
+    const merged = await window.api.settings.updateGeneral({ expenseReminderHour: clamped })
+    setGeneral(merged)
+  }
+
   function openCredentialsConsole(e: MouseEvent): void {
     e.preventDefault()
     window.api.shell.openExternal('https://console.cloud.google.com/apis/credentials')
@@ -234,6 +254,30 @@ export default function Settings() {
               onBlur={commitDigestHour}
             />
           </div>
+
+          <label className="settings-checkbox">
+            <input
+              type="checkbox"
+              checked={general.expenseReminderEnabled}
+              onChange={handleToggleExpenseReminder}
+            />
+            記帳提醒(當天到了設定時間還沒記任何一筆收支,就提醒我)
+          </label>
+
+          {general.expenseReminderEnabled && (
+            <div className="settings-field">
+              <label htmlFor="expense-reminder-hour">記帳提醒時間(0-23 時)</label>
+              <input
+                id="expense-reminder-hour"
+                type="number"
+                min={0}
+                max={23}
+                value={general.expenseReminderHour}
+                onChange={handleExpenseReminderHourInput}
+                onBlur={commitExpenseReminderHour}
+              />
+            </div>
+          )}
 
           {generalMessage && <p className="settings-message">{generalMessage}</p>}
         </section>

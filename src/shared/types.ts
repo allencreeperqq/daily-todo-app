@@ -23,6 +23,21 @@ export interface CreateTaskInput {
 
 export type TaskPatch = Partial<CreateTaskInput>
 
+export interface Note {
+  id: number
+  title: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateNoteInput {
+  title?: string
+  content?: string
+}
+
+export type NotePatch = Partial<CreateNoteInput>
+
 export interface Account {
   id: number
   name: string
@@ -117,6 +132,8 @@ export interface GeneralSettings {
   openAtLogin: boolean
   reminderLeadMinutes: number
   morningDigestHour: number
+  expenseReminderEnabled: boolean
+  expenseReminderHour: number
 }
 
 export interface SyncResult {
@@ -148,6 +165,12 @@ export interface DailyTodoApi {
     create(input: CreateTaskInput): Promise<Task>
     update(id: number, patch: TaskPatch): Promise<Task | undefined>
     toggle(id: number, completed: boolean): Promise<Task | undefined>
+    delete(id: number): Promise<void>
+  }
+  notes: {
+    list(): Promise<Note[]>
+    create(input: CreateNoteInput): Promise<Note>
+    update(id: number, patch: NotePatch): Promise<Note | undefined>
     delete(id: number): Promise<void>
   }
   finance: {

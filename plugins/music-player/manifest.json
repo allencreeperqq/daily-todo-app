@@ -1,0 +1,7 @@
+{
+  "id": "music-player",
+  "name": "音樂播放器",
+  "version": "0.1.0",
+  "main": "main.mjs",
+  "description": "選一個資料夾,播放裡面的 wav/flac,顯示格式、取樣率、專輯等資訊,可一鍵去 Spotify 搜同一首歌"
+}

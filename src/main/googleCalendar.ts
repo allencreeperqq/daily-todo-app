@@ -181,9 +181,21 @@ export async function syncGoogleCalendar(): Promise<SyncOutcome> {
     try {
       for (const item of items) {
         if (item.status === 'cancelled') continue
-        const startAt = item.start?.dateTime ?? item.start?.date
-        if (!startAt) continue
+        const rawStart = item.start?.dateTime ?? item.start?.date
+        if (!rawStart) continue
         const allDay = Boolean(item.start?.date && !item.start?.dateTime)
+        const rawEnd = item.end?.dateTime ?? item.end?.date ?? null
+
+        // Google returns timed events in the event's own timezone offset (e.g.
+        // "+08:00"), not UTC. Storing that raw string breaks the plain-text
+        // range comparisons in listEvents()/checkEventReminders() below, which
+        // compare against timeMin/timeMax/now.toISOString() (always "Z"-suffixed
+        // UTC) — lexicographic comparison of two ISO strings only sorts
+        // correctly when both use the same offset. Normalize timed values to
+        // UTC at write time so every stored start_at/end_at is directly
+        // comparable. All-day "date" values (no time/offset) are left as-is.
+        const startAt = allDay ? rawStart : new Date(rawStart).toISOString()
+        const endAt = rawEnd && !allDay ? new Date(rawEnd).toISOString() : rawEnd
 
         upsert.run({
           calendar_id: calendarId,
@@ -191,7 +203,7 @@ export async function syncGoogleCalendar(): Promise<SyncOutcome> {
           title: item.summary ?? '(無標題)',
           location: item.location ?? null,
           start_at: startAt,
-          end_at: item.end?.dateTime ?? item.end?.date ?? null,
+          end_at: endAt,
           all_day: allDay ? 1 : 0
         })
         seenIds.push(item.id)

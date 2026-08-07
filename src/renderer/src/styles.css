@@ -1012,6 +1012,28 @@ body {
   opacity: 0.6;
 }
 
+/* Multi-day events: extend the chip to the cell's own border on whichever
+   side it continues into a neighboring day, so scanning across a week row
+   reads as one connected bar rather than separate same-day chips. */
+.cell-item.multiday {
+  background: color-mix(in srgb, var(--accent-2) 38%, transparent);
+  font-weight: 600;
+}
+
+.cell-item.multiday.flush-left {
+  margin-left: -8px;
+  padding-left: 8px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.cell-item.multiday.flush-right {
+  margin-right: -8px;
+  padding-right: 8px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 .cell-more {
   font-size: 0.7rem;
   color: var(--muted);
@@ -1286,4 +1308,203 @@ body {
 .trend-month-label {
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+/* Notes page */
+
+.notes-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.notes-page h1 {
+  margin: 0 0 20px;
+}
+
+.notes-body {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  min-height: 0;
+  height: calc(100vh - 200px);
+  min-height: 320px;
+}
+
+.notes-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.notes-new {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notes-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.notes-list li.empty {
+  color: var(--muted);
+  padding: 10px 12px;
+}
+
+.notes-list-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.notes-list-item.active {
+  border-color: var(--accent);
+}
+
+.notes-list-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.notes-list-time {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.notes-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.notes-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.notes-title-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.notes-content-input,
+.notes-preview {
+  flex: 1;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notes-content-input {
+  resize: none;
+  font-family: 'Cascadia Code', Consolas, 'Microsoft JhengHei', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.notes-preview {
+  line-height: 1.7;
+}
+
+.notes-preview :first-child {
+  margin-top: 0;
+}
+
+.notes-preview h1,
+.notes-preview h2,
+.notes-preview h3 {
+  margin: 1.2em 0 0.5em;
+}
+
+.notes-preview p {
+  margin: 0.6em 0;
+}
+
+.notes-preview code {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.notes-preview pre {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 12px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.notes-preview pre code {
+  background: none;
+  padding: 0;
+}
+
+.notes-preview blockquote {
+  margin: 0.6em 0;
+  padding: 4px 14px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.notes-preview ul,
+.notes-preview ol {
+  padding-left: 1.4em;
+}
+
+.notes-preview img {
+  max-width: 100%;
+}
+
+.notes-preview a {
+  color: var(--accent);
 }

@@ -48,6 +48,38 @@ interface AgendaItem {
   kind: 'task' | 'event'
   completed: boolean
   sortAt: number
+  multiDay?: boolean
+  segStart?: boolean
+  segEnd?: boolean
+}
+
+function addDaysKey(key: string, n: number): string {
+  const [y, m, d] = key.split('-').map(Number)
+  return dateKey(new Date(y, m - 1, d + n))
+}
+
+// The half-open local-date range [startKey, endKey) an event occupies, so a
+// multi-day event (e.g. a 3-day trip synced from Google Calendar) can be
+// matched against every day it spans instead of only its start day.
+function eventDateKeyRange(event: CalendarEvent): { startKey: string; endKey: string } {
+  if (event.all_day) {
+    // all-day dates have no time/offset component, so the stored strings are
+    // already unambiguous local calendar dates — no Date() round-trip needed.
+    const startKey = event.start_at.slice(0, 10)
+    const rawEndKey = event.end_at ? event.end_at.slice(0, 10) : addDaysKey(startKey, 1)
+    return { startKey, endKey: rawEndKey > startKey ? rawEndKey : addDaysKey(startKey, 1) }
+  }
+
+  const startKey = dateKey(new Date(event.start_at))
+  if (!event.end_at) return { startKey, endKey: addDaysKey(startKey, 1) }
+
+  const end = new Date(event.end_at)
+  const endDayKey = dateKey(end)
+  // If the event ends exactly at local midnight, that day isn't covered
+  // (e.g. Mon 22:00 – Wed 00:00 spans Mon and Tue only, not Wed).
+  const endsAtLocalMidnight = end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0
+  const rawEndKey = endsAtLocalMidnight ? endDayKey : addDaysKey(endDayKey, 1)
+  return { startKey, endKey: rawEndKey > startKey ? rawEndKey : addDaysKey(startKey, 1) }
 }
 
 function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaItem[] {
@@ -69,22 +101,42 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
   }
 
   for (const event of events) {
-    if (event.start_at.slice(0, 10) !== key) continue
+    const { startKey, endKey } = eventDateKeyRange(event)
+    if (key < startKey || key >= endKey) continue
+
     const start = new Date(event.start_at)
+    const multiDay = addDaysKey(startKey, 1) < endKey
+    const isStartDay = key === startKey
+    const isEndDay = addDaysKey(key, 1) === endKey
+
+    let timeLabel: string
+    if (event.all_day) timeLabel = '整天'
+    else if (multiDay) timeLabel = isStartDay ? start.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '接續'
+    else timeLabel = start.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+
     items.push({
       key: `event-${event.id}`,
       id: event.id,
-      timeLabel: event.all_day
-        ? '整天'
-        : start.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+      timeLabel,
       title: event.title,
       kind: 'event',
       completed: false,
-      sortAt: event.all_day ? -Infinity : start.getTime()
+      // Pin multi-day events to the top on every day they touch (not just
+      // all-day ones) so they land at the same list position across days —
+      // that's what makes the month-grid chips line up into a visual row.
+      sortAt: event.all_day || multiDay ? -Infinity : start.getTime(),
+      multiDay,
+      segStart: isStartDay,
+      segEnd: isEndDay
     })
   }
 
   return items.sort((a, b) => a.sortAt - b.sortAt)
+}
+
+function isEventOnDay(event: CalendarEvent, key: string): boolean {
+  const { startKey, endKey } = eventDateKeyRange(event)
+  return key >= startKey && key < endKey
 }
 
 export default function Today() {
@@ -197,7 +249,7 @@ export default function Today() {
   const todayDate = startOfDay(new Date())
   const pending = tasks.filter((t) => !t.completed_at)
   const done = tasks.filter((t) => t.completed_at)
-  const eventsToday = events.filter((ev) => ev.start_at.slice(0, 10) === dateKey(todayDate))
+  const eventsToday = events.filter((ev) => isEventOnDay(ev, dateKey(todayDate)))
 
   return (
     <div className="today-page">
@@ -396,14 +448,24 @@ function MonthGrid({
             >
               <span className="cell-date">{day.getDate()}</span>
               <div className="cell-items">
-                {items.slice(0, 3).map((item) => (
-                  <span
-                    key={item.key}
-                    className={`cell-item ${item.kind}${item.completed ? ' done' : ''}`}
-                  >
-                    {item.title}
-                  </span>
-                ))}
+                {items.slice(0, 3).map((item) => {
+                  // A multi-day chip only "flushes" into the neighboring cell
+                  // when that neighbor is still part of the same event AND
+                  // still in the same grid row — a new week row is a natural
+                  // break point, same as Google Calendar's own month view.
+                  const flushLeft = item.multiDay && !item.segStart && day.getDay() !== 0
+                  const flushRight = item.multiDay && !item.segEnd && day.getDay() !== 6
+                  return (
+                    <span
+                      key={item.key}
+                      className={`cell-item ${item.kind}${item.completed ? ' done' : ''}${
+                        item.multiDay ? ' multiday' : ''
+                      }${flushLeft ? ' flush-left' : ''}${flushRight ? ' flush-right' : ''}`}
+                    >
+                      {item.title}
+                    </span>
+                  )
+                })}
                 {items.length > 3 && <span className="cell-more">+{items.length - 3}</span>}
               </div>
             </button>

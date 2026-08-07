@@ -4,6 +4,7 @@ import { closeDb, getDb } from './db'
 import { createTray } from './tray'
 import { startScheduler } from './scheduler'
 import { createTask, deleteTask, listTasks, toggleTaskComplete, updateTask } from './tasks'
+import { createNote, deleteNote, listNotes, updateNote } from './notes'
 import {
   createAccount,
   createTransaction,
@@ -86,6 +87,11 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tasks:update', (_event, id, patch) => updateTask(id, patch))
   ipcMain.handle('tasks:toggle', (_event, id, completed) => toggleTaskComplete(id, completed))
   ipcMain.handle('tasks:delete', (_event, id) => deleteTask(id))
+
+  ipcMain.handle('notes:list', () => listNotes())
+  ipcMain.handle('notes:create', (_event, input) => createNote(input))
+  ipcMain.handle('notes:update', (_event, id, patch) => updateNote(id, patch))
+  ipcMain.handle('notes:delete', (_event, id) => deleteNote(id))
 
   ipcMain.handle('finance:accounts:list', () => listAccounts())
   ipcMain.handle('finance:accounts:create', (_event, input) => createAccount(input))

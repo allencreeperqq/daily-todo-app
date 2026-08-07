@@ -40,7 +40,9 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   themeMode: 'system',
   openAtLogin: false,
   reminderLeadMinutes: 10,
-  morningDigestHour: 8
+  morningDigestHour: 8,
+  expenseReminderEnabled: true,
+  expenseReminderHour: 21
 }
 
 export function getGeneralSettings(): GeneralSettings {

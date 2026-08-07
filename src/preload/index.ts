@@ -2,10 +2,12 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   CreateAccountInput,
   CreateBudgetInput,
+  CreateNoteInput,
   CreateTaskInput,
   CreateTransactionInput,
   DailyTodoApi,
   GeneralSettings,
+  NotePatch,
   TaskPatch
 } from '../shared/types'
 
@@ -16,6 +18,12 @@ const api: DailyTodoApi = {
     update: (id: number, patch: TaskPatch) => ipcRenderer.invoke('tasks:update', id, patch),
     toggle: (id: number, completed: boolean) => ipcRenderer.invoke('tasks:toggle', id, completed),
     delete: (id: number) => ipcRenderer.invoke('tasks:delete', id)
+  },
+  notes: {
+    list: () => ipcRenderer.invoke('notes:list'),
+    create: (input: CreateNoteInput) => ipcRenderer.invoke('notes:create', input),
+    update: (id: number, patch: NotePatch) => ipcRenderer.invoke('notes:update', id, patch),
+    delete: (id: number) => ipcRenderer.invoke('notes:delete', id)
   },
   finance: {
     listAccounts: () => ipcRenderer.invoke('finance:accounts:list'),

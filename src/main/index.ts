@@ -153,48 +153,69 @@ function registerIpcHandlers(): void {
   })
 }
 
-app.whenReady().then(async () => {
-  getDb()
-  if (app.isPackaged) {
-    app.setLoginItemSettings({ openAtLogin: getGeneralSettings().openAtLogin })
-  }
-  registerIpcHandlers()
-  createWindow()
+// The window "close" handler hides to the tray instead of quitting, so the
+// app is meant to have exactly one long-lived resident instance — but
+// nothing stopped a second launch (e.g. double-clicking the shortcut while
+// it was already resident in the tray) from spawning a whole separate
+// process with its own window, tray icon, and reminder scheduler, which is
+// how multiple tray icons showed up. requestSingleInstanceLock() makes every
+// launch after the first fail to acquire the lock and quit immediately
+// instead, handing off to the already-running instance via 'second-instance'.
+const gotTheLock = app.requestSingleInstanceLock()
 
-  const loaded = await loadPlugins()
-  loadedPlugins = loaded.plugins
-  pluginCommands = loaded.commands
-
-  createTray(
-    () => mainWindow?.show(),
-    () => {
-      isQuitting = true
-      app.quit()
-    },
-    pluginCommands
-  )
-  startScheduler()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    else mainWindow?.show()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
   })
-})
 
-app.on('before-quit', () => {
-  isQuitting = true
-  // A minimized frameless BrowserWindow can stall Electron's close sequence
-  // on Windows — restoring it first avoids the hang.
-  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isMinimized()) {
-    mainWindow.restore()
-  }
-  closeAllToasts()
-})
+  app.whenReady().then(async () => {
+    getDb()
+    if (app.isPackaged) {
+      app.setLoginItemSettings({ openAtLogin: getGeneralSettings().openAtLogin })
+    }
+    registerIpcHandlers()
+    createWindow()
 
-app.on('window-all-closed', () => {
-  if (process.platform === 'darwin') return
-})
+    const loaded = await loadPlugins()
+    loadedPlugins = loaded.plugins
+    pluginCommands = loaded.commands
 
-app.on('quit', () => {
-  closeDb()
-})
+    createTray(
+      () => mainWindow?.show(),
+      () => {
+        isQuitting = true
+        app.quit()
+      },
+      pluginCommands
+    )
+    startScheduler()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      else mainWindow?.show()
+    })
+  })
+
+  app.on('before-quit', () => {
+    isQuitting = true
+    // A minimized frameless BrowserWindow can stall Electron's close sequence
+    // on Windows — restoring it first avoids the hang.
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    closeAllToasts()
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform === 'darwin') return
+  })
+
+  app.on('quit', () => {
+    closeDb()
+  })
+}

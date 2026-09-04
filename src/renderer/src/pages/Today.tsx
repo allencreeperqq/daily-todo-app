@@ -87,7 +87,11 @@ function buildAgenda(day: Date, tasks: Task[], events: CalendarEvent[]): AgendaI
   const items: AgendaItem[] = []
 
   for (const task of tasks) {
-    if (!task.due_at || task.due_at.slice(0, 10) !== key) continue
+    // Compare by local calendar date, not a raw string slice — due_at is
+    // stored as a UTC ISO string, so a task due at 07:00 local (UTC+8) is
+    // "23:00 the previous day" in UTC, and slicing the first 10 chars would
+    // silently bucket it onto the wrong day.
+    if (!task.due_at || dateKey(new Date(task.due_at)) !== key) continue
     const due = new Date(task.due_at)
     items.push({
       key: `task-${task.id}`,
@@ -164,25 +168,35 @@ export default function Today() {
     return { from: gridStart, to: gridEnd }
   }, [viewMode, anchor])
 
-  async function refresh(): Promise<void> {
-    const [taskList, eventList] = await Promise.all([
-      window.api.tasks.list(),
-      window.api.calendar.listEvents(range.from.toISOString(), range.to.toISOString())
-    ])
-    setTasks(taskList)
-    setEvents(eventList)
-    setLoading(false)
+  // Tasks aren't range-scoped (the API always returns all of them), so they
+  // only need to be (re)loaded once and after a task mutation — reloading
+  // them every time the visible date range changes (switching views,
+  // navigating months/weeks) was pure wasted work. Likewise, a mutation
+  // updates local state directly from its own result instead of re-fetching
+  // everything from scratch — each button click used to wait on the mutation
+  // AND then a full tasks+events reload before the UI updated at all, which
+  // is what made every click feel laggy.
+  async function refreshTasks(): Promise<void> {
+    setTasks(await window.api.tasks.list())
+  }
+
+  async function refreshEvents(): Promise<void> {
+    setEvents(await window.api.calendar.listEvents(range.from.toISOString(), range.to.toISOString()))
   }
 
   useEffect(() => {
-    refresh()
+    refreshTasks().then(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    refreshEvents()
     // range.from/to are recreated each render; compare by epoch ms instead
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range.from.getTime(), range.to.getTime()])
 
   async function createTask(taskTitle: string, dueAtIso: string | null): Promise<void> {
-    await window.api.tasks.create({ title: taskTitle, due_at: dueAtIso })
-    await refresh()
+    const task = await window.api.tasks.create({ title: taskTitle, due_at: dueAtIso })
+    setTasks((prev) => [...prev, task])
   }
 
   async function handleAdd(e: FormEvent): Promise<void> {
@@ -195,19 +209,19 @@ export default function Today() {
     setDueAt('')
   }
 
-  async function handleToggle(task: Task): Promise<void> {
-    await window.api.tasks.toggle(task.id, !task.completed_at)
-    await refresh()
+  async function handleToggle(id: number, completed: boolean): Promise<void> {
+    const updated = await window.api.tasks.toggle(id, completed)
+    if (updated) setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
   }
 
   async function handleDelete(id: number): Promise<void> {
     await window.api.tasks.delete(id)
-    await refresh()
+    setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
   async function handleHideEvent(id: number): Promise<void> {
     await window.api.calendar.hideEvent(id)
-    await refresh()
+    setEvents((prev) => prev.filter((e) => e.id !== id))
   }
 
   function shift(delta: number): void {
@@ -337,7 +351,11 @@ export default function Today() {
               {pending.map((task) => (
                 <li key={task.id}>
                   <label>
-                    <input type="checkbox" checked={false} onChange={() => handleToggle(task)} />
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => handleToggle(task.id, !task.completed_at)}
+                    />
                     <span>{task.title}</span>
                   </label>
                   {task.due_at && (
@@ -366,7 +384,11 @@ export default function Today() {
                 {done.map((task) => (
                   <li key={task.id}>
                     <label>
-                      <input type="checkbox" checked={true} onChange={() => handleToggle(task)} />
+                      <input
+                        type="checkbox"
+                        checked={true}
+                        onChange={() => handleToggle(task.id, !task.completed_at)}
+                      />
                       <span>{task.title}</span>
                     </label>
                     <button
@@ -395,6 +417,8 @@ export default function Today() {
           today={todayDate}
           onSelectDay={goToDay}
           onHideEvent={handleHideEvent}
+          onToggleTask={handleToggle}
+          onDeleteTask={handleDelete}
         />
       )}
       {viewMode === 'day' && (
@@ -404,6 +428,8 @@ export default function Today() {
           events={events}
           onHideEvent={handleHideEvent}
           onAddTask={createTask}
+          onToggleTask={handleToggle}
+          onDeleteTask={handleDelete}
         />
       )}
     </div>
@@ -482,7 +508,9 @@ function WeekAgenda({
   events,
   today,
   onSelectDay,
-  onHideEvent
+  onHideEvent,
+  onToggleTask,
+  onDeleteTask
 }: {
   anchor: Date
   tasks: Task[]
@@ -490,6 +518,8 @@ function WeekAgenda({
   today: Date
   onSelectDay: (d: Date) => void
   onHideEvent: (id: number) => void
+  onToggleTask: (id: number, completed: boolean) => Promise<void>
+  onDeleteTask: (id: number) => Promise<void>
 }) {
   const from = startOfWeek(anchor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
@@ -512,12 +542,29 @@ function WeekAgenda({
                   key={item.key}
                   className={`agenda-item ${item.kind}${item.completed ? ' done' : ''}`}
                 >
+                  {item.kind === 'task' && (
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      onChange={() => onToggleTask(item.id, !item.completed)}
+                      aria-label="完成"
+                    />
+                  )}
                   {item.timeLabel && <span className="agenda-time">{item.timeLabel}</span>}
                   <span className="agenda-title">{item.title}</span>
                   {item.kind === 'event' && (
                     <button
                       className="delete"
                       onClick={() => onHideEvent(item.id)}
+                      aria-label="刪除"
+                    >
+                      ×
+                    </button>
+                  )}
+                  {item.kind === 'task' && (
+                    <button
+                      className="delete"
+                      onClick={() => onDeleteTask(item.id)}
                       aria-label="刪除"
                     >
                       ×
@@ -538,13 +585,17 @@ function DayAgenda({
   tasks,
   events,
   onHideEvent,
-  onAddTask
+  onAddTask,
+  onToggleTask,
+  onDeleteTask
 }: {
   day: Date
   tasks: Task[]
   events: CalendarEvent[]
   onHideEvent: (id: number) => void
   onAddTask: (title: string, dueAtIso: string | null) => Promise<void>
+  onToggleTask: (id: number, completed: boolean) => Promise<void>
+  onDeleteTask: (id: number) => Promise<void>
 }) {
   const items = buildAgenda(day, tasks, events)
   const [newTitle, setNewTitle] = useState('')
@@ -582,11 +633,24 @@ function DayAgenda({
       <ul className="day-agenda-list">
         {items.map((item) => (
           <li key={item.key} className={`agenda-item ${item.kind}${item.completed ? ' done' : ''}`}>
+            {item.kind === 'task' && (
+              <input
+                type="checkbox"
+                checked={item.completed}
+                onChange={() => onToggleTask(item.id, !item.completed)}
+                aria-label="完成"
+              />
+            )}
             <span className="agenda-time">{item.timeLabel ?? '整天'}</span>
             <span className="agenda-title">{item.title}</span>
             <span className="agenda-kind">{item.kind === 'task' ? '待辦' : 'Google 日曆'}</span>
             {item.kind === 'event' && (
               <button className="delete" onClick={() => onHideEvent(item.id)} aria-label="刪除">
+                刪除
+              </button>
+            )}
+            {item.kind === 'task' && (
+              <button className="delete" onClick={() => onDeleteTask(item.id)} aria-label="刪除">
                 刪除
               </button>
             )}
